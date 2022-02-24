@@ -11,6 +11,7 @@
 
 
 from enlace import *
+
 import time
 import numpy as np
 
@@ -21,44 +22,39 @@ import numpy as np
 
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
-#serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM3"                  # Windows(variacao de)
+serialName = "/dev/cu.usbmodem14201" # Mac    (variacao de)
+#serialName = "COM3"                  # Windows(variacao de)
 
 
 def main():
+
     try:
-        #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
-        #para declarar esse objeto é o nome da porta.
-        com1 = enlace('COM3')
         
-    
-        # Ativa comunicacao. Inicia os threads e a comunicação seiral 
+        # #declaramos um objeto do tipo enlace com o nome "com" e ativa comunicação
+        com1 = enlace(serialName)
         com1.enable()
-        print('Foi')
-        #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
         
-        #aqui você deverá gerar os dados a serem transmitidos. 
-        #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
-        #nome de txBuffer. Ela sempre irá armazenar os dados a serem enviados.
-        imagem = "./imagem.png"
-        txBuffer = open(imagem, 'rb').read()    
+        # dados a serem transmitidos (bytes da imagem "imagem.png")
+        local_imagem = "./imagem.png"
+        txBuffer = open(local_imagem, 'rb').read()    
 
-    
         #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
-       
+        tamanho_imagem = len(txBuffer)
             
-        #finalmente vamos transmitir os tados. Para isso usamos a funçao sendData que é um método da camada enlace.
-        #faça um print para avisar que a transmissão vai começar.
-        #tente entender como o método send funciona!
-        #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
-        
+        # verbose de início de transmissão
         print("*"*50)
-        print("Início da Transmissão")
-        print("*"*50)
+        print("Início da transmissão")
+        print("Enviando " + local_imagem + " (%d bytes)" % tamanho_imagem)
 
-        start_s = time.time()
-        com1.sendData(np.asarray(txBuffer))
-        print("Tempo de Enviar:", str(time.time()-start_s))
+        # início da transmissão
+        start = time.time()                     # momento do início da transmissão
+        com1.sendData(np.asarray(txBuffer))     # envio dos dados
+        end = time.time()                       # momento ao final da transmissão
+        delta = end - start                     # tempo de transmissão
+
+        # verbose do tempo de recepção
+        delta_ms_aprox = round(delta * 1000, 3)
+        print("Tempo de envio: ~" + str(delta_ms_aprox) + " ms")
        
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # Tente entender como esse método funciona e o que ele retorna
@@ -69,23 +65,34 @@ def main():
         
         #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
         #Veja o que faz a funcao do enlaceRX  getBufferLen
-      
-        #acesso aos bytes recebidos
-        txLen = len(txBuffer)
-        start_g = time.time()
-        rxBuffer, nRx = com1.getData(txLen)
-        print("Tempo de Recepção:", str(time.time()-start_g))
-        print("recebeu {}" .format(rxBuffer))
 
-        f = open("./imagemrecebida.png", 'wb')
+        arquivo_imagem_recebida = "./imagemrecebida.png"
+
+        # verbose de recepção de dados
+        print("*"*50)
+        print("Recebendo dados...")
+      
+        # acesso aos bytes recebidos
+        txLen = len(txBuffer)         
+        start = time.time()                 # momento do início da leitura
+        rxBuffer, nRx = com1.getData(txLen) # faz a leitura do buffer (bytes e tamanho)
+        end = time.time()
+        delta = end - start
+
+        # verbose de recepção de dados
+        delta_aprox = round(delta, 2)
+        print("Tempo de recepção: ~" + str(delta_aprox) + "s (%d bytes)" % nRx)
+        print("Salvando imagem em " + arquivo_imagem_recebida)
+
+        print("*"*50)
+
+        f = open(arquivo_imagem_recebida, 'wb')
         f.write(rxBuffer)
 
         f.close()
     
         # Encerra comunicação
-        print("-------------------------")
-        print("Comunicação encerrada")
-        print("-------------------------")
+        print("\nComunicação encerrada")
         com1.disable()
         
     except Exception as erro:
