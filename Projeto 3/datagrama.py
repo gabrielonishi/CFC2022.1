@@ -20,8 +20,8 @@ class Datagram():
     EOP_BYTES = [b'\xBB'] * 4
 
     # especificações do datagrama para referenciamento externo
-    MAX_PAYLOAD = 114
-    MAX_AMMOUNT = 256 ** 3
+    MAX_PAYLOAD = 114       # tamanho do payload em bytes
+    MAX_AMMOUNT = 256 ** 3  # quantidade máxima de datagramas em uma mensagem
 
     def __init__(self, ammount, number, payload):
         '''
