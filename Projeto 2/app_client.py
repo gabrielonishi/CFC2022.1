@@ -97,7 +97,9 @@ def main():
             print(f'SUCESSO: Número de Comandos: {n}')
 
         # Encerra comunicação
-        print("\nComunicação encerrada")
+        print("\nFIM DO RECEBIMENTO")
+        print("*"*50)
+        print("\nCOMUNICAÇÃO ENCERRADA\n\n")
         com1.disable()
         
     except Exception as erro:

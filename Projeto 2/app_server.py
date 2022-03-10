@@ -80,16 +80,27 @@ def main():
         print("FIM DO RECEBIMENTO")
         print("*"*50)
         print("INÍCIO DA TRANSMISSÃO\n")
-        print(f"Mandando: \n{txBuffer}")
-        com1.sendData(np.asarray(txBuffer))
+        
+        # CASO 1: DANDO CERTO
+
+        # print(f"Mandando: \n{txBuffer}")
+        # com1.sendData(np.asarray(txBuffer))
+
+        # CASO 2: DANDO ERRADO
+        
+        print(f"Mandando: \n{b'\x02'}")
+        com1.sendData(np.asarray(b'\x02'))
+
         print("FIM DA TRANSMISSÃO\n")
         print("*"*50)
 
+        # CASO 3: DANDO TIMEOUT
 
+        time.sleep(11)
 
     
         # Encerra comunicação
-        print("\nComunicação encerrada")
+        print("\nCOMUNICAÇÃO ENCERRADA\n\n")
         com1.disable()
         
     except Exception as erro:
