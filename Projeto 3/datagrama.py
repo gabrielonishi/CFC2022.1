@@ -24,7 +24,7 @@ class Datagram():
         Inicializa um único datagrama pertencente a um grupo de datagramas (pacote)
 
         Parâmetros:
-        - number: número do datagrama (int)
+        - number: número do datagrama (int) (o número 1 é o primeiro)
         - ammount: número total de datagramas (int)
         - payload: dados (lista de bytes, no máximo 114 bytes)
 

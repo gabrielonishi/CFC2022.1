@@ -29,6 +29,9 @@ Comando 6: 00 FF (comando de 1 bytes)
 def main():
 
     try:
+        # Processamento da imagem
+        img_bytes = open("./img_teste.png", 'rb').read()
+            
         #Inicializando a porta
         com1 = enlace(serialName)
         com1.enable()
