@@ -25,22 +25,23 @@ class Message():
 
         Parâmetros:
         - raw_data: lista de bytes a serem enviados
+        - datagrams: dicionario de datagramas que compõem a mensagem
         
         '''
 
         # extrai as especificações do datagrama
-        max_ammount = Datagram.MAX_AMMOUNT
+        max_data = Datagram.MAX_DATA
         max_payload = Datagram.MAX_PAYLOAD
 
         # verifica a validade dos argumentos
-        if len(raw_data) > max_ammount * max_payload: raise ValueError('Mensagem grande demais')
+        if len(raw_data) > max_data: raise ValueError('Mensagem grande demais')
 
         # calcula a quantidade de datagramas necessários
         number_of_datagrams = math.ceil(len(raw_data) / max_payload)
 
         # divide os dados brutos em datagramas  --- --- --- --- --- --- --- --- --- --- ---
         # e cria a lista de bytes da mensagem
-        self.datagrams = list()
+        self.datagrams = dict()     # começa com None para igualar o número do datagrama ao indíce
         self.bytes = list()
 
         for i in range(number_of_datagrams):
@@ -51,17 +52,13 @@ class Message():
 
             # extrai o intervalo e cria um datagrama com o payload
             payload = raw_data[from_index:to_index]
-            datagram = Datagram(number_of_datagrams, i + 1, payload)
+            datagram = Datagram(self, number_of_datagrams, i + 1, payload)
 
             # adiciona o datagrama à lista de datagramas e preenche a lista de bytes
-            self.datagrams.append(datagram)
+            self.datagrams[i + 1] = datagram
             self.bytes += datagram.bytes
 
         #-- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-
-
-
 
 
 
