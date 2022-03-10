@@ -20,25 +20,27 @@ import numpy as np
 #   python -m serial.tools.list_ports
 # se estiver usando windows, o gerenciador de dispositivos informa a porta
 
-#use uma das 3 opcoes para atribuir à variável a porta usada
-#serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
-serialName = "/dev/cu.usbmodem14201" # Mac    (variacao de)
-#serialName = "COM3"                  # Windows(variacao de)
+# use uma das 3 opcoes para atribuir à variável a porta usada
+# serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
+# serialName = "/dev/cu.usbmodem14201" # Mac    (variacao de)
+serialName = "COM4"                  # Windows(variacao de) (COM4 é o da esquerda)
 
 
 def main():
 
     try:
         
-        # #declaramos um objeto do tipo enlace com o nome "com" e ativa comunicação
+        # Declaramos um objeto do tipo enlace com o nome "com" e ativa comunicação
         com1 = enlace(serialName)
         com1.enable()
         
         # dados a serem transmitidos (bytes da imagem "imagem.png")
         local_imagem = "./imagem.png"
-        txBuffer = open(local_imagem, 'rb').read()    
+        # um buffer é uma área de uma memória que guarda o que será enviado antes disso realmente acontecer.
+        txBuffer = open(local_imagem, 'rb').read()
+        print(txBuffer)
 
-        #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
+        # faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
         tamanho_imagem = len(txBuffer)
             
         # verbose de início de transmissão

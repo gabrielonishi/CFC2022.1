@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 #####################################################
-#Carareto
-#17/02/2018
+# Carareto
+# 17/02/2018
 ####################################################
 
 # Importa pacote de comunicação serial
@@ -15,11 +15,13 @@ import binascii
 #################################
 # Interface com a camada física #
 #################################
+
 class fisica(object):
     def __init__(self, name):
         self.name        = name
         self.port        = None
-        #self.baudrate    = 115200
+        # O baudrate é a velocidade de transferência de informação
+        # Há uma limitação física para baudrate dependendo da porta/cabo
         self.baudrate    = 9600
         self.bytesize    = serial.EIGHTBITS
         self.parity      = serial.PARITY_NONE

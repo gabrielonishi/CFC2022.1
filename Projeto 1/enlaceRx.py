@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 #####################################################
 # Camada Física da Computação
-#Carareto
-#17/02/2018
+# Carareto
+# 17/02/2018
 #  Camada de Enlace
 ####################################################
 
@@ -11,6 +11,9 @@
 import time
 
 # Threads
+# A máquina não consegue trabalhar em múltiplas coisas ao mesmo tempo
+# Ao invés de fazer isso, dividimos a CPU em threads que vão trabalhando cada um em uma coisa
+# Isso possibilita, por exemplo, que possamos ouvir música e codar ao mesmo tempo :)
 import threading
 
 # Class

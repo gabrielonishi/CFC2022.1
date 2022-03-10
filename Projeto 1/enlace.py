@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 #####################################################
 # Camada Física da Computação
-#Carareto
-#17/02/2018
+# Carareto
+# 17/02/2018
 #  Camada de Enlace
 ####################################################
 
@@ -26,6 +26,9 @@ class enlace(object):
         self.connected   = False
 
     def enable(self):
+        """
+            Abre o port, inicia o thread no rx e no tx
+        """
         self.fisica.open()
         self.rx.threadStart()
         self.tx.threadStart()
