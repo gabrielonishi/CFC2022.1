@@ -14,7 +14,7 @@ import time
 import numpy as np
 
 # serialName = "/dev/cu.usbmodem14201"  # Mac    (variacao de)
-serialName = "COM11"                     # Windows(variacao de)
+serialName = "COM10"                     # Windows(variacao de)
 
 def main():
 
@@ -83,22 +83,21 @@ def main():
         
         # CASO 1: DANDO CERTO
 
-        # print(f"Mandando: \n{txBuffer}")
-        # com1.sendData(np.asarray(txBuffer))
+        print(f"Mandando: \n{txBuffer}")
+        com1.sendData(np.asarray(txBuffer))
 
         # CASO 2: DANDO ERRADO
         
-        print(f"Mandando: \n{b'\x02'}")
-        com1.sendData(np.asarray(b'\x02'))
+        # print("Mandando: b'\x02'")
+        # com1.sendData(np.asarray(b'\x02'))
+        
+        # CASO 3: DANDO TIMEOUT
+
+        # time.sleep(11)
 
         print("FIM DA TRANSMISSÃO\n")
         print("*"*50)
 
-        # CASO 3: DANDO TIMEOUT
-
-        time.sleep(11)
-
-    
         # Encerra comunicação
         print("\nCOMUNICAÇÃO ENCERRADA\n\n")
         com1.disable()

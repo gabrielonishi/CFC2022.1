@@ -14,7 +14,7 @@ import numpy as np
 import random
 
 # serialName = "/dev/cu.usbmodem14201"  # Mac    (variacao de)
-serialName = "COM12"                    # Windows(variacao de)
+serialName = "COM10"                    # Windows(variacao de)
 
 """
 Comando 1: 00 FF 00 FF (comando de 4 bytes)
@@ -85,15 +85,15 @@ def main():
         # RECEBENDO INFORMAÇÕES DE VOLTA
 
         # Sabemos com certeza que o número de comandos varia de 10 a 30
-        # Se retornar 31 sabemos que deu timeout
+
         rxBuffer, nRx = com1.getData(1)
         n_recebidos = int.from_bytes(rxBuffer, byteorder='big')
-        if(rxBuffer == b'\xAA'):
-            print("ERRO: Timeout")
         
-        if(n != n_recebidos):
+        if (rxBuffer==b'\xaa' or n_recebidos==170):
+            print("ERRO: Timeout")
+        elif (n != n_recebidos):
             print(f'ERRO: \n Comandos Enviados - {n} \n Comandos Recebidos - {n_recebidos}')
-        else:
+        elif 10<n_recebidos<=30:
             print(f'SUCESSO: Número de Comandos: {n}')
 
         # Encerra comunicação
