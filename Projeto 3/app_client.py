@@ -11,6 +11,7 @@ from enlace import *
 from pacote import Packet
 from mensagem import Message
 import utils
+import sys
 
 import time
 import numpy as np
@@ -37,7 +38,7 @@ def main():
         # ENVIANDO INFORMAÇÕES
 
         """
-        PARTE I: HANDSHAKE
+        PARTE II: HANDSHAKE
         Envio de uma mensagem conhecida pelo servidor para confirmar
         se ele está ativo
         Caso não se obtenha uma resposta com *a mesma mensagem* em
@@ -52,26 +53,59 @@ def main():
 
         print("*"*50)
         print("INÍCIO DO HANDSHAKE\n")
-        # Vamos convencionar que o payload de handshake será b'\xAB'
-        handshake = Packet(number=1, ammount=1, payload=[b'\xAB'])
+
+        # Vamos convencionar que os dados do handshake serão [b'\xAB']
+        # Será convencionado também que o server deve simplemente espelhar o handshake
+        handshake_out = Message("out", [b'\xAB'])
         handshake_success = False
+
         while not handshake_success:
+
+            # Message de recebimento da resposta ao handshake
+            handshake_in = Message("in")
+
             print("Enviando handshake")
-            com1.sendData(handshake.bytes)
+            com1.sendData(handshake_out.bytes)
             time.sleep(0.1)
-            print("Aguardando handshake de volta")
-            rxBuffer, nRx = com1.getData(128)
-            mensagem_hs = Message()
-            handshake = mensagem_hs.receive(rxBuffer)
-            if(handshake.data == [b'\xAB']):
+
+            while not handshake_in.is_complete:
+                
+                print("Aguardando handshake de volta")
+                rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
+                packet_success = handshake_in.receive(rxBuffer)
+
+                if not packet_success: print('Um pacote do handshake recebido do servidor não está nos conformes')
+
+
+            if handshake_in.data == handshake_out.data:
                 print("Handshake Recebido com sucesso!")
-                print("Enviando package de volta")
-                com1.sendData(handshake.bytes)
-                time.sleep(0.1)
                 print("\nFIM DO HANDSHAKE")
                 print("*"*50)
                 handshake_success = True
-            elif(handshake.data == b'\xAA')
+
+            elif handshake_in.data == b'\xAA':
+
+                valid_answer = False
+
+                while not valid_answer:
+
+                    answer = input("Servidor inativo. Tentar novamente? S/N")
+
+                    if answer == "N":
+                        print("Encerrando aplicação :(")
+                        valid_answer = True
+                        sys.exit()
+
+                    elif answer == "S": valid_answer = True
+                    else: print('Não entendi')
+        
+
+        """
+        PARTE III: FRAGMENTAÇÃO
+        Dividir a mensagem bruta em vários pacotes de 128 bytes
+        """
+        
+
 
         print("\nFIM DO HANDSHAKE")
         print("*"*50)

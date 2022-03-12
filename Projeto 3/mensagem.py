@@ -1,10 +1,6 @@
-'''
-Arquivo criado para armazenar a classe de Datagrama
 
-'''
 
 import math
-import utils
 
 from pacote import Packet
 
@@ -24,25 +20,29 @@ class Message():
 
     '''
 
-    def __init__(self, data=[]):
+    def __init__(self, message_type, data=[]):
         '''
         Inicializa um objeto Message
 
         Parâmetros:
+        - message_type: tipo da mensagem, "in" ou "out"
         - data: lista de bytes dos dados não separados
         
         '''
 
-        # amarra o argumento à instância de Message
+        # amarra os argumentos à instância de Message
         self.data = data
+        self.type = message_type
 
         # determina se a mensagem está completa ou não
-        if len(data) == 0:
+        if self.type == 'in':
             self.last_received = 0
             self.is_complete = False
-        else:
+        elif self.type == 'out':
             self.last_received = False
             self.is_complete = True
+        else:
+            raise ValueError('Tipo de mensagem inválido, use "in" ou "out" somente')
 
         # extrai as especificações dos pacotes
         max_data = Packet.MAX_DATA
@@ -92,7 +92,7 @@ class Message():
         
         '''
 
-        if self.is_complete: raise TypeError('Essa mensagem já está completa')
+        if self.type == 'out': raise TypeError('Essa mensagem é de envio')
 
         # decodifica o pacote e retorna False se houver falhas
         received_packet = Packet.decode(self, raw_packet)
@@ -100,6 +100,9 @@ class Message():
 
         # verifica se o recebido é o próximo do último recebido
         if received_packet.number != self.last_received + 1: return False
+
+        # incrementa o last received
+        self.last_received = received_packet.number
 
         # verifica se a mensagem foi completada
         if self.last_received == self.number_of_packets: self.is_complete = True
@@ -109,16 +112,27 @@ class Message():
         self.bytes += received_packet.bytes
         self.data += received_packet.data
         
-        return received_packet
+        return True
 
 
 d_out = [b'\xFF'] * 2 ** 10
-m_out = Message(d_out)
+m_out = Message("out", d_out)
+m_in = Message("in")
 
-m_in = Message()
+print(m_in.is_complete)
 
 for i in range(1, m_out.number_of_packets + 1):
-    packet = m_out.packets[i].bytes
-    m_in.receive_packet(packet)
+    packet = m_out.packets[i]
+    m_in.receive_packet(packet.bytes)
 
-print(m_in.data == m_out.data)
+print(m_in.is_complete)
+
+'''
+
+Nem todas as propriedades de uma mensagem in são preenchidas
+
+Comparação de duas listas de bytes não parece funcionar, fazer overload
+do operador == para a classe Message
+
+'''
+

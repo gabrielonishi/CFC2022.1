@@ -135,7 +135,8 @@ class Packet():
         #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
         # verifica a validade do EOP
-        if eop != Packet.EOP_BYTES: return False
+        if eop != Packet.EOP_BYTES:
+            return False
 
         # extrai o payload
         payload = raw_packet[Packet.HEAD_SIZE : -1 * Packet.EOP_SIZE]
