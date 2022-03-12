@@ -7,9 +7,12 @@ Gabriel Onishi
 Jerônimo Afrange
 
 '''
+from enlace import *
+import utils
+from pacote import Packet
+from mensagem import Message
 
 from sys import byteorder
-from enlace import *
 import time
 import numpy as np
 
@@ -36,6 +39,24 @@ def main():
         # verbose de início de transmissão
         print("*"*50)
         print("INÍCIO DO RECEBIMENTO\n")
+        print("Aguardando o handshake...")
+
+        rxBuffer, nRx = com1.getData(128)
+        mensagem_hs = Message()
+        handshake = mensagem_hs.receive(rxBuffer)
+        if(handshake.data == [b'\xAB']):
+            print("Handshake recebido com sucesso!")
+            print("Enviando package de volta")
+            com1.sendData(handshake.bytes)
+            time.sleep(0.1)
+            print("\nFIM DO HANDSHAKE")
+            print("*"*50)
+        else: print("Ops... Problema no recebimento do Hanshake")
+
+    
+        # Verificar primeiro xAA pra ter certeza que é o pacote de handshake
+        # if rxBuffer==b'\xAA': 
+            
 
         # RECEBENDO DADOS
 

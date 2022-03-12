@@ -71,7 +71,7 @@ class RX(object):
         start = time.time()
         while(self.getBufferLen() < size):
             tempo = time.time() - start
-            if tempo>10:
+            if tempo>5:
                 return b'\xAA' 
             else:   
                 time.sleep(0.05)

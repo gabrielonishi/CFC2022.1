@@ -8,6 +8,9 @@ Jerônimo Afrange
 
 '''
 from enlace import *
+from pacote import Packet
+from mensagem import Message
+import utils
 
 import time
 import numpy as np
@@ -16,22 +19,12 @@ import random
 # serialName = "/dev/cu.usbmodem14201"  # Mac    (variacao de)
 serialName = "COM10"                    # Windows(variacao de)
 
-"""
-Comando 1: 00 FF 00 FF (comando de 4 bytes)
-Comando 2: 00 FF FF 00 (comando de 4 bytes)
-Comando 3: FF (comando de 1 byte)
-Comando 4: 00 (comando de 1 byte)
-Comando 5: FF 00 (comando de 2 bytes) 
-Comando 6: 00 FF (comando de 1 bytes)
-
-"""
-
 def main():
 
     try:
         # Processamento da imagem
         img_bytes = open("./img_teste.png", 'rb').read()
-            
+        
         #Inicializando a porta
         com1 = enlace(serialName)
         com1.enable()
@@ -42,6 +35,46 @@ def main():
         time.sleep(1)
         
         # ENVIANDO INFORMAÇÕES
+
+        """
+        PARTE I: HANDSHAKE
+        Envio de uma mensagem conhecida pelo servidor para confirmar
+        se ele está ativo
+        Caso não se obtenha uma resposta com *a mesma mensagem* em
+        menos de 5 segundos, o usuário recebe uma mensagem: "Servidor 
+        inativo. Tentar novamente? S/N”
+        
+        Em caso de S, outra mensagem é executada
+
+        Em caso de N, aplicação é encerrada
+        
+        """
+
+        print("*"*50)
+        print("INÍCIO DO HANDSHAKE\n")
+        # Vamos convencionar que o payload de handshake será b'\xAB'
+        handshake = Packet(number=1, ammount=1, payload=[b'\xAB'])
+        handshake_success = False
+        while not handshake_success:
+            print("Enviando handshake")
+            com1.sendData(handshake.bytes)
+            time.sleep(0.1)
+            print("Aguardando handshake de volta")
+            rxBuffer, nRx = com1.getData(128)
+            mensagem_hs = Message()
+            handshake = mensagem_hs.receive(rxBuffer)
+            if(handshake.data == [b'\xAB']):
+                print("Handshake Recebido com sucesso!")
+                print("Enviando package de volta")
+                com1.sendData(handshake.bytes)
+                time.sleep(0.1)
+                print("\nFIM DO HANDSHAKE")
+                print("*"*50)
+                handshake_success = True
+            elif(handshake.data == b'\xAA')
+
+        print("\nFIM DO HANDSHAKE")
+        print("*"*50)
         
         # # Gerando o txBuffer, ou a fila de dados que serão transferidos
         # txBuffer = comandos_enviados
