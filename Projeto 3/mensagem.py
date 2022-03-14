@@ -127,15 +127,15 @@ class Message():
         if not isinstance(other, Message): return False
 
         # renomeia propriedades
-        size = self.data_size
+        size = self.number_of_packets
 
         # verifica o tamanho de ambas as instâncias
         if self.data_size != other.data_size: return False
 
-        # percorre todos os bytes dos dados de ambos as instâncias
+        # percorre todos os pacotes de ambas as instâncias
         equal = True
-        for i in range(size):
-            equal = equal and (self.data[i] == other.data[i])
+        for i in range(1, number_of_packets + 1):
+            equal = equal and (self.packets[i] == other.packets[i])
             if not equal: return False
 
         return True

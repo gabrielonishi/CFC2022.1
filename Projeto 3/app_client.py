@@ -7,12 +7,15 @@ Gabriel Onishi
 Jerônimo Afrange
 
 '''
+
 from enlace import *
 from pacote import Packet
 from mensagem import Message
-import utils
-import sys
 
+import utils
+import protocolo as protocol
+
+import sys
 import time
 import numpy as np
 import random
@@ -22,8 +25,6 @@ import random
 # Os dados do handshake deve ter no máximo 114 bytes
 # SERIAL_PORT_NAME = "/dev/cu.usbmodem14201"  # Mac    (variacao de)
 SERIAL_PORT_NAME = "COM10"                    # Windows(variacao de)
-HANDSHAKE_DATA = [b'\xAB']
-SERVER_INACTIVE_DATA = [b'\xAA']
 
 if len(HANDSHAKE_DATA) > 114: raise ValueError('Dados demais para o handshake')
 if len(SERVER_INACTIVE_DATA) > 114: raise ValueError('Dados demais para sinalizar inatividade')
@@ -61,7 +62,7 @@ def main():
         print("INÍCIO DO HANDSHAKE\n")
 
         # criação do objeto Message do handshake e que será enviado pelo client
-        handshake_out = Message("out", HANDSHAKE_DATA)
+        handshake_out = Message("out", protocol.HANDSHAKE_DATA)
         handshake_success = False
 
         while not handshake_success:
@@ -77,23 +78,14 @@ def main():
             # recepção da resposta
             print("Aguardando handshake de volta")
             rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
+            com1.rx.clearBuffer()
 
             # em caso de timeout    --- --- --- --- --- --- --- --- --- --- ---
             if rxBuffer is None:
-                valid_answer = False
-                while not valid_answer:
-
-                    answer = input("Servidor inativo. Tentar novamente? S/N")
-
-                    if answer.upper() == "N":
-                        print("Encerrando aplicação :(")
-                        valid_answer = True
-                        sys.exit()
-
-                    elif answer.upper() == "S": valid_answer = True; break
-                    else: print("Não entendi.\n")
-
-            if valid_answer: continue
+                print("Hanshake timeout...")
+                tryAgain = utils.tryAgainPrompt()
+                if tryAgain: continue
+                else: sys.exit()
             #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
             # em caso de recepção verifica se os bytes recebidos estão nos conformes
@@ -127,11 +119,61 @@ def main():
         print("*"*50)
         print("INÍCIO DA TRANSMISSÃO\n")
 
+        # mensagens de sucesso e falha
+        success_message = Message("out", protocol.PACKET_RECEIVED_DATA)
+        failure_message = Message("out", protocol.PACKET_ERROR_DATA)
+
         # loop de pacote em pacote
         for packet_id in range(1, message.number_of_packets + 1):
-            packet = message.packets[packe_id]
-        
 
+            # loop de tentativa
+            while True:
+
+                validation_message = Message("in")
+
+                print("%d/%d... " % (packet_id, message.number_of_packets + 1), end='\t')
+
+                packet = message.packets[packet_id]
+                com1.sendData(packet.bytes)
+                com1.tx.clearBuffer()
+                time.sleep(0.1)
+
+                # recepção da confirmação
+                rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
+                com1.rx.clearBuffer()
+
+                # em caso de timeout    --- --- --- --- --- --- --- --- --- --- ---
+                if rxBuffer is None:
+                    print("TIMEOUT")
+                    tryAgain = utils.tryAgainPrompt()
+                    if tryAgain: continue
+                    else: sys.exit()
+                #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+                # recepção da mensagem
+                reception_success = validation_message.receive(rxBuffer)
+
+                # em caso de mensagem fora dos padrões do datagrama --- --- --- ---
+                if not reception_success:
+                    print('CONFIRMAÇÃO FORA DOS PADRÕES')
+                    continue
+                #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+                # verifica se o servidor indcou erro de transmissão --- --- --- ---
+                if validation_message == failure_message:
+                    print('FALHA DE TRANSMISSÃO')
+                    continue    # envia o pacote denovo
+                #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+                # verifica se o servidor indicou sucesso de transmissão --- --- ---
+                if validation_message == success_message:
+                    print('OK')
+                    break
+                #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+                else: print('CONFIRMAÇÃO INVÁLIDA')
+
+        # verbose de fim de transmissão
         print("FIM DA TRANSMISSÃO")
         print("*"*50)
 

@@ -8,9 +8,11 @@ Jerônimo Afrange
 
 '''
 from enlace import *
-import utils
 from pacote import Packet
 from mensagem import Message
+
+import utils
+import protocolo as protocol
 
 from sys import byteorder
 import time
@@ -39,20 +41,43 @@ def main():
         # verbose de início de transmissão
         print("*"*50)
         print("INÍCIO DO RECEBIMENTO\n")
-        print("Aguardando o handshake...")
 
-        rxBuffer, nRx = com1.getData(128)
-        mensagem_hs = Message()
-        handshake = mensagem_hs.receive(rxBuffer)
-        if(handshake.data == [b'\xAB']):
-            print("Handshake recebido com sucesso!")
-            print("Enviando package de volta")
-            com1.sendData(handshake.bytes)
-            time.sleep(0.1)
-            print("\nFIM DO HANDSHAKE")
-            print("*"*50)
-        else: print("Ops... Problema no recebimento do Hanshake")
+        while True:
 
+            print("Aguardando o handshake...")
+
+            rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
+            com1.clearBuffer()
+
+            handshake_in = Message("in")
+            success_message = Message("out", protocol.HANDSHAKE_DATA)
+            failure_message = Message("out", protocol.PACKET_ERROR_DATA)
+            reception_success = handshake_in.receive(rxBuffer)
+
+            # em caso de handshake fora dos padrões do datagrama -- --- --- ---
+            if not reception_success:
+                print('Handshake fora dos conformes do datagrama\n')
+                com1.sendData(failure_message.bytes)
+                continue
+            #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+            # verifica se o servidor indcou erro de transmissão --- --- --- ---
+            elif validation_message == failure_message:
+                print('Handshake inválido\n')
+                com1.sendData(failure_message.bytes)
+                continue
+            #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+            # verifica se o servidor indicou sucesso de transmissão --- --- ---
+            elif handshake_in == success_message:
+                print('Handshake recebido, enviando de volta...')
+                com1.sendData(success_message)
+                break
+            #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+        print("\nAguardando pacotes...\n")
+        
+        while True: pass
     
         # Verificar primeiro xAA pra ter certeza que é o pacote de handshake
         # if rxBuffer==b'\xAA': 
