@@ -5,6 +5,7 @@ Arquivo criado para armazenar a classe Packet
 
 import utils
 
+
 class Packet():
     '''
     Representa um tipo de pacote definido pelo datagrama especificado no enunciado
@@ -147,6 +148,30 @@ class Packet():
         packet = Packet(message, number, data)
 
         return packet
+
+
+    def __eq__(self, other):
+        ''' Overload do comparador de igualdade '''
+
+        # verifica se other é Packet
+        if not isinstance(other, Packet): return False
+
+        # renomeia propriedades
+        size = self.data_size
+
+        # verifica o tamanho de ambas as instâncias
+        if self.data_size != other.data_size: return False
+
+        # percorre todos os bytes dos dados de ambos as instâncias
+        equal = True
+        for i in range(size):
+            equal = equal and (self.data[i] == other.data[i])
+            if not equal: return False
+
+        return True
+
+
+
 
 
 

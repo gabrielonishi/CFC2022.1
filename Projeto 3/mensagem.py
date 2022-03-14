@@ -111,8 +111,35 @@ class Message():
         self.packets[received_packet.number] = received_packet
         self.bytes += received_packet.bytes
         self.data += received_packet.data
+
+        # atualiza demais propriedades
+        self.number_of_packets = received_packet.ammount
+        self.total_size += Packet.PACKET_SIZE
+        self.data_size += received_packet.data_size
         
         return True
+
+
+    def __eq__(self, other):
+        ''' Overload do comparador de igualdade '''
+
+        # verifica se other é Message também
+        if not isinstance(other, Message): return False
+
+        # renomeia propriedades
+        size = self.data_size
+
+        # verifica o tamanho de ambas as instâncias
+        if self.data_size != other.data_size: return False
+
+        # percorre todos os bytes dos dados de ambos as instâncias
+        equal = True
+        for i in range(size):
+            equal = equal and (self.data[i] == other.data[i])
+            if not equal: return False
+
+        return True
+
 
 
 d_out = [b'\xFF'] * 2 ** 10
@@ -126,10 +153,9 @@ for i in range(1, m_out.number_of_packets + 1):
     m_in.receive_packet(packet.bytes)
 
 print(m_in.is_complete)
+print(m_in == m_out)
 
 '''
-
-Nem todas as propriedades de uma mensagem in são preenchidas
 
 Comparação de duas listas de bytes não parece funcionar, fazer overload
 do operador == para a classe Message
