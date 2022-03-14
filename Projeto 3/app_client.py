@@ -31,39 +31,36 @@ if len(SERVER_INACTIVE_DATA) > 114: raise ValueError('Dados demais para sinaliza
 def main():
 
     try:
-        # Processamento da imagem
-        img_bytes = open("./img_teste.png", 'rb').read()
         
-        #Inicializando a porta
+        # inicializando a porta
         com1 = enlace(SERIAL_PORT_NAME)
         com1.enable()
         time.sleep(.2)
 
-        # Enviando byte de sacrifício (necessário por conta de problemas de hardware)
+        # enviando byte de sacrifício (necessário por conta de problemas de hardware)
         com1.sendData(b'00')
         time.sleep(1)
         
-        # ENVIANDO INFORMAÇÕES
+        '''
+        HANDSHAKE
 
-        """
-        PARTE II: HANDSHAKE
         Envio de uma mensagem conhecida pelo servidor para confirmar
-        se ele está ativo
-        Caso não se obtenha uma resposta com *a mesma mensagem* em
-        menos de 5 segundos, o usuário recebe uma mensagem: "Servidor 
-        inativo. Tentar novamente? S/N”
+        se ele está ativo e pronto para receber a mensagem
+
+        Caso não se obtenha uma resposta com a mesma mensagem, como
+        convencionado, em menos de 5 segundos, o usuário recebe uma
+        mensagem: "Servidor inativo. Tentar novamente? S/N”
         
         Em caso de S, outra mensagem é executada
-
         Em caso de N, aplicação é encerrada
         
-        """
+        '''
 
-        print("*"*50)
+        # verbose de início de handshake
+        print("*" * 50)
         print("INÍCIO DO HANDSHAKE\n")
 
-        # criação do objeto Message do handshake que será enviado pelo client
-        dummy_inactive_message = Message("out", SERVER_INACTIVE_DATA)
+        # criação do objeto Message do handshake e que será enviado pelo client
         handshake_out = Message("out", HANDSHAKE_DATA)
         handshake_success = False
 
@@ -77,9 +74,29 @@ def main():
             com1.sendData(handshake_out.bytes)
             time.sleep(0.1)
                 
-            # recepção da resposta e verificação da integridade dos dados
+            # recepção da resposta
             print("Aguardando handshake de volta")
             rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
+
+            # em caso de timeout    --- --- --- --- --- --- --- --- --- --- ---
+            if rxBuffer is None:
+                valid_answer = False
+                while not valid_answer:
+
+                    answer = input("Servidor inativo. Tentar novamente? S/N")
+
+                    if answer.upper() == "N":
+                        print("Encerrando aplicação :(")
+                        valid_answer = True
+                        sys.exit()
+
+                    elif answer.upper() == "S": valid_answer = True; break
+                    else: print("Não entendi.\n")
+
+            if valid_answer: continue
+            #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+            # em caso de recepção verifica se os bytes recebidos estão nos conformes
             reception_success = handshake_in.receive(rxBuffer)
             if not reception_success: print('O pacote recebido do servidor durante o handshake não está nos conformes')
 
@@ -90,54 +107,38 @@ def main():
                 print("*"*50)
                 handshake_success = True
 
-            # verifica se o servidor está inativo e pede input do usuário
-            elif handshake_in == dummy_inactive_message:
-
-                valid_answer = False
-                while not valid_answer:
-
-                    answer = input("Servidor inativo. Tentar novamente? S/N")
-
-                    if answer == "N":
-                        print("Encerrando aplicação :(")
-                        valid_answer = True
-                        sys.exit()
-
-                    elif answer == "S": valid_answer = True
-                    else: print("Não entendi")
-
             # caso nada dê certo
             else: print("Erro de handshake")
-        
 
-        '''
-        PARTE III: FRAGMENTAÇÃO
-        Dividir a mensagem bruta em vários pacotes de 128 bytes
-
-        '''
-
+        # verbose de fim de handshake
         print("\nFIM DO HANDSHAKE")
         print("*"*50)
         
-        # # Gerando o txBuffer, ou a fila de dados que serão transferidos
-        # txBuffer = comandos_enviados
+        '''
+        ENVIO DOS PACOTES
+        
+        '''
 
-        # #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
-        # tamanho_txBuffer = len(txBuffer)
+        # processamento da imagem
+        img_bytes = open("./img_teste.png", 'rb').read()
+        message = Message("out", img_bytes)
             
         # verbose de início de transmissão
         print("*"*50)
         print("INÍCIO DA TRANSMISSÃO\n")
-        # print(f"Lista de comandos enviados: {comandos_enviados}")
-        print(f'{n} comandos no total')
-        # print("Enviando dados (%d bytes)\n" % tamanho_txBuffer)
 
-        # início da transmissão
-        # com1.sendData(np.asarray(txBuffer))     # envio dos dados
-        # time.sleep(0.1)
+        # loop de pacote em pacote
+        for packet_id in range(1, message.number_of_packets + 1):
+            packet = message.packets[packe_id]
+        
 
         print("FIM DA TRANSMISSÃO")
         print("*"*50)
+
+
+
+
+
         print("INÍCIO DO RECEBIMENTO\n")
 
         # RECEBENDO INFORMAÇÕES DE VOLTA
