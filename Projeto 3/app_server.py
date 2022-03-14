@@ -22,139 +22,154 @@ serialName = "/dev/cu.usbmodem14101"  # Mac    (variacao de)
 #serialName = "COM10"                     # Windows(variacao de)
 
 def main():
+
+    # *** *** *** *** *** *** *** *** *** *** ***
+    #
+    #
+    #   CORRIGIR TIPO DE DADOS DE ENVIO
+    #
+    #
+    # *** *** *** *** *** *** *** *** *** *** ***
     
-    # Declaramos um objeto do tipo enlace com o nome "com" e ativa comunicação
-    com1 = enlace(serialName)
-    com1.enable()
-    time.sleep(0.2)
+    try:
+        
+        # Declaramos um objeto do tipo enlace com o nome "com" e ativa comunicação
+        com1 = enlace(serialName)
+        com1.enable()
+        time.sleep(0.2)
 
-    # Pegando o byte de sacrifício junto com a sujeira
-    # Código cedido pelo Carareto
+        # Pegando o byte de sacrifício junto com a sujeira
+        # Código cedido pelo Carareto
 
-    print("Esperando 1 byte de sacrifício")
-    rxBuffer, nRx = com1.getData(1, 1e12)
-    com1.rx.clearBuffer()
-    time.sleep(.1)
-
-    # verbose de início de transmissão
-    print("*"*50)
-    print("INÍCIO DO RECEBIMENTO\n")
-
-    while True:
-
-        print("Aguardando o handshake...")
-
-        rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
+        print("Esperando 1 byte de sacrifício")
+        rxBuffer, nRx = com1.getData(1, 1e12)
         com1.rx.clearBuffer()
+        time.sleep(.1)
 
-        # em caso de timeout
-        if rxBuffer is None:
-            print("Timeout")
-            tryAgain = utils.tryAgainPrompt()
-            if tryAgain: continue
-            else: sys.exit()
-
-        handshake_in = Message("in")
-        failure_message = Message("out", protocol.PACKET_ERROR_DATA)
-        reception_success = handshake_in.receivePacket(rxBuffer)
-
-        # em caso de handshake fora dos padrões do datagrama -- --- --- ---
-        if not reception_success:
-            print('Handshake fora dos conformes do datagrama\n')
-            com1.sendData(failure_message.bytes)
-            com1.rx.clearBuffer()
-            continue
-        #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-        # verifica se o servidor indicou sucesso de transmissão --- --- ---
-        valid, number_of_packets = protocol.validateHandshake(handshake_in)
-        if valid:
-            print('Handshake recebido, enviando de volta...\n')
-            com1.sendData(handshake_in.bytes)
-            com1.rx.clearBuffer()
-            break
-        #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-    print("FIM DO HANDSHAKE")
-    print("*"*50)
-
-    print()
-    print("*"*50)
-    print("RECEBENDO PACOTES\n")
-
-    message_in = Message("in")
-
-    error_response = Message("out", protocol.PACKET_ERROR_DATA)
-    success_response = Message("out", protocol.PACKET_RECEIVED_DATA)
-    
-    # loop de recebimento de pacotes
-    for packet_id in range(1, ammount + 1):
+        # verbose de início de transmissão
+        print("*"*50)
+        print("INÍCIO DO RECEBIMENTO\n")
 
         while True:
 
-            print("%d/%d... " % (packet_id, ammount), end='\t')
+            print("Aguardando o handshake...")
 
-            # recebimento dos dados
             rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
             com1.rx.clearBuffer()
 
-            # em caso de timeout    --- --- --- --- --- --- --- --- --- --- ---
+            # em caso de timeout
             if rxBuffer is None:
-                print("TIMEOUT")
+                print("Timeout")
                 tryAgain = utils.tryAgainPrompt()
                 if tryAgain: continue
                 else: sys.exit()
-            #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-            # validação da mensagem
-            reception_success = validation_message.receivePacket(rxBuffer)
+            handshake_in = Message("in")
+            failure_message = Message("out", protocol.PACKET_ERROR_DATA)
+            reception_success = handshake_in.receivePacket(rxBuffer)
 
-            # em caso de pacote fora dos padrões do datagrama --- --- --- ---
+            # em caso de handshake fora dos padrões do datagrama -- --- --- ---
             if not reception_success:
-                print('PACOTE FORA DOS PADRÕES')
+                print('Handshake fora dos conformes do datagrama\n')
+                com1.sendData(failure_message.bytes)
+                com1.rx.clearBuffer()
                 continue
             #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
             # verifica se o servidor indicou sucesso de transmissão --- --- ---
-            else:
-                print('OK')
+            valid, number_of_packets = protocol.validateHandshake(handshake_in)
+            if valid:
+                print('Handshake recebido, enviando de volta...\n')
+                com1.sendData(handshake_in.bytes)
+                com1.rx.clearBuffer()
                 break
             #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-    # verbose de fim de transmissão
-    print("FIM DA TRANSMISSÃO")
-    print("*"*50)
+        print("FIM DO HANDSHAKE")
+        print("*"*50)
 
+        print()
+        print("*"*50)
+        print("RECEBENDO PACOTES\n")
 
+        message_in = Message("in")
 
-
-    # Verificar primeiro xAA pra ter certeza que é o pacote de handshake
-    # if rxBuffer==b'\xAA': 
+        error_response = Message("out", protocol.PACKET_ERROR_DATA)
+        success_response = Message("out", protocol.PACKET_RECEIVED_DATA)
         
+        # loop de recebimento de pacotes
+        for packet_id in range(1, ammount + 1):
 
-    # RECEBENDO DADOS
+            while True:
 
-    # rxBuffer, nRx = com1.getData(1)       
-    
-    # Enviando o número de instruções de volta
+                print("%d/%d... " % (packet_id, ammount), end='\t')
 
-    # txBuffer = bytes([n_recebidos])
+                # recebimento dos dados
+                rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
+                com1.rx.clearBuffer()
 
-    print("FIM DO RECEBIMENTO")
-    print("*"*50)
-    print("INÍCIO DA TRANSMISSÃO\n")
-    
-    # print(f"Mandando: \n{txBuffer}")
-    # com1.sendData(np.asarray(txBuffer))
+                # em caso de timeout    --- --- --- --- --- --- --- --- --- --- ---
+                if rxBuffer is None:
+                    print("TIMEOUT")
+                    tryAgain = utils.tryAgainPrompt()
+                    if tryAgain: continue
+                    else: sys.exit()
+                #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-    # time.sleep(11)
+                # validação da mensagem
+                reception_success = validation_message.receivePacket(rxBuffer)
 
-    print("FIM DA TRANSMISSÃO\n")
-    print("*"*50)
+                # em caso de pacote fora dos padrões do datagrama --- --- --- ---
+                if not reception_success:
+                    print('PACOTE FORA DOS PADRÕES')
+                    continue
+                #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-    # Encerra comunicação
-    print("\nCOMUNICAÇÃO ENCERRADA\n\n")
-    com1.disable()
+                # verifica se o servidor indicou sucesso de transmissão --- --- ---
+                else:
+                    print('OK')
+                    break
+                #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
+        # verbose de fim de transmissão
+        print("FIM DA TRANSMISSÃO")
+        print("*"*50)
+
+
+
+
+        # Verificar primeiro xAA pra ter certeza que é o pacote de handshake
+        # if rxBuffer==b'\xAA': 
+            
+
+        # RECEBENDO DADOS
+
+        # rxBuffer, nRx = com1.getData(1)       
+        
+        # Enviando o número de instruções de volta
+
+        # txBuffer = bytes([n_recebidos])
+
+        print("FIM DO RECEBIMENTO")
+        print("*"*50)
+        print("INÍCIO DA TRANSMISSÃO\n")
+        
+        # print(f"Mandando: \n{txBuffer}")
+        # com1.sendData(np.asarray(txBuffer))
+
+        # time.sleep(11)
+
+        print("FIM DA TRANSMISSÃO\n")
+        print("*"*50)
+
+        # Encerra comunicação
+        print("\nCOMUNICAÇÃO ENCERRADA\n\n")
+        com1.disable()
+
+    except Exception:
+        print("ops! :-\\")
+        print(erro)
+        com1.disable()
         
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
