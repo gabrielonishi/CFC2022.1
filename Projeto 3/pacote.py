@@ -132,17 +132,17 @@ class Packet():
 
             # lida com bytes fixos
             else:
-                if received_byte != expected_value: return False
+                if received_byte != expected_value: return None
         #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
         # verifica a validade do EOP
         if eop != Packet.EOP_BYTES:
-            return False
+            return None
 
         # extrai o payload
         payload = raw_packet[Packet.HEAD_SIZE : -1 * Packet.EOP_SIZE]
         data = payload[ : data_size]
-        
+
         # cria a nova instância de Datagrama
         message.number_of_packets = ammount
         packet = Packet(message, number, data)

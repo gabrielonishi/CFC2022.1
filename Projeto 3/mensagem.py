@@ -96,7 +96,7 @@ class Message():
 
         # decodifica o pacote e retorna False se houver falhas
         received_packet = Packet.decode(self, raw_packet)
-        if received_packet == False: return False
+        if received_packet is None: return False
 
         # verifica se o recebido é o próximo do último recebido
         if received_packet.number != self.last_received + 1: return False
@@ -141,24 +141,4 @@ class Message():
         return True
 
 
-
-d_out = [b'\xFF'] * 2 ** 10
-m_out = Message("out", d_out)
-m_in = Message("in")
-
-print(m_in.is_complete)
-
-for i in range(1, m_out.number_of_packets + 1):
-    packet = m_out.packets[i]
-    m_in.receive_packet(packet.bytes)
-
-print(m_in.is_complete)
-print(m_in == m_out)
-
-'''
-
-Comparação de duas listas de bytes não parece funcionar, fazer overload
-do operador == para a classe Message
-
-'''
 
