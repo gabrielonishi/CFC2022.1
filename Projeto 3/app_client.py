@@ -17,8 +17,16 @@ import time
 import numpy as np
 import random
 
-# serialName = "/dev/cu.usbmodem14201"  # Mac    (variacao de)
-serialName = "COM10"                    # Windows(variacao de)
+# Vamos convencionar que os dados do handshake serão [b'\xAB']
+# Será convencionado também que o server deve simplemente espelhar o handshake
+# Os dados do handshake deve ter no máximo 114 bytes
+# SERIAL_PORT_NAME = "/dev/cu.usbmodem14201"  # Mac    (variacao de)
+SERIAL_PORT_NAME = "COM10"                    # Windows(variacao de)
+HANDSHAKE_DATA = [b'\xAB']
+SERVER_INACTIVE_DATA = [b'\xAA']
+
+if len(HANDSHAKE_DATA) > 114: raise ValueError('Dados demais para o handshake')
+if len(SERVER_INACTIVE_DATA) > 114: raise ValueError('Dados demais para sinalizar inatividade')
 
 def main():
 
@@ -27,7 +35,7 @@ def main():
         img_bytes = open("./img_teste.png", 'rb').read()
         
         #Inicializando a porta
-        com1 = enlace(serialName)
+        com1 = enlace(SERIAL_PORT_NAME)
         com1.enable()
         time.sleep(.2)
 
@@ -54,9 +62,9 @@ def main():
         print("*"*50)
         print("INÍCIO DO HANDSHAKE\n")
 
-        # Vamos convencionar que os dados do handshake serão [b'\xAB']
-        # Será convencionado também que o server deve simplemente espelhar o handshake
-        handshake_out = Message("out", [b'\xAB'])
+        # criação do objeto Message do handshake que será enviado pelo client
+        dummy_inactive_message = Message("out", SERVER_INACTIVE_DATA)
+        handshake_out = Message("out", HANDSHAKE_DATA)
         handshake_success = False
 
         while not handshake_success:
@@ -64,29 +72,28 @@ def main():
             # Message de recebimento da resposta ao handshake
             handshake_in = Message("in")
 
+            # Envio do handshake
             print("Enviando handshake")
             com1.sendData(handshake_out.bytes)
             time.sleep(0.1)
-
-            while not handshake_in.is_complete:
                 
-                print("Aguardando handshake de volta")
-                rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
-                packet_success = handshake_in.receive(rxBuffer)
+            # recepção da resposta e verificação da integridade dos dados
+            print("Aguardando handshake de volta")
+            rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
+            reception_success = handshake_in.receive(rxBuffer)
+            if not reception_success: print('O pacote recebido do servidor durante o handshake não está nos conformes')
 
-                if not packet_success: print('Um pacote do handshake recebido do servidor não está nos conformes')
-
-
-            if handshake_in.data == handshake_out.data:
+            # verifica se os dados recebidos são os mesmos que foram enviados
+            elif handshake_in == handshake_out:
                 print("Handshake Recebido com sucesso!")
                 print("\nFIM DO HANDSHAKE")
                 print("*"*50)
                 handshake_success = True
 
-            elif handshake_in.data == b'\xAA':
+            # verifica se o servidor está inativo e pede input do usuário
+            elif handshake_in == dummy_inactive_message:
 
                 valid_answer = False
-
                 while not valid_answer:
 
                     answer = input("Servidor inativo. Tentar novamente? S/N")
@@ -97,15 +104,17 @@ def main():
                         sys.exit()
 
                     elif answer == "S": valid_answer = True
-                    else: print('Não entendi')
+                    else: print("Não entendi")
+
+            # caso nada dê certo
+            else: print("Erro de handshake")
         
 
-        """
+        '''
         PARTE III: FRAGMENTAÇÃO
         Dividir a mensagem bruta em vários pacotes de 128 bytes
-        """
-        
 
+        '''
 
         print("\nFIM DO HANDSHAKE")
         print("*"*50)
