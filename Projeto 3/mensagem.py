@@ -1,6 +1,7 @@
 
 
 import math
+import numpy as np
 
 from pacote import Packet
 
@@ -59,7 +60,7 @@ class Message():
         # divide os dados brutos em pacotes  --- --- --- --- --- --- --- --- --- --- ---
         # e adiciona os bytes dos pacotes à lista de bytes
         self.packets = dict()
-        self.bytes = list()
+        self.bytes_list = list()
 
         for i in range(number_of_packets):
 
@@ -73,16 +74,17 @@ class Message():
 
             # adiciona o datagrama à lista de datagramas e preenche a lista de bytes
             self.packets[i + 1] = packet
-            self.bytes += packet.bytes
+            self.bytes_list += packet.bytes_list
 
         #-- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
         # define demais propriedades
-        self.total_size = len(self.bytes)
+        self.total_size = len(self.bytes_list)
         self.data_size = len(self.data)
+        self.bytes = np.asarray(self.bytes_list)
 
 
-    def receive_packet(self, raw_packet):
+    def receivePacket(self, raw_packet):
         '''
         Adiciona um pacote recebido à mensagem
         Retorna False se o pacote recebido for inválido
@@ -109,8 +111,9 @@ class Message():
 
         # adiciona os dados do pacote aos dados totais da mensagem
         self.packets[received_packet.number] = received_packet
-        self.bytes += received_packet.bytes
+        self.bytes_list += received_packet.bytes_list
         self.data += received_packet.data
+        self.bytes = np.asarray(self.bytes_list)
 
         # atualiza demais propriedades
         self.number_of_packets = received_packet.ammount

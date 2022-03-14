@@ -4,6 +4,7 @@ Arquivo criado para armazenar a classe Packet
 """
 
 import utils
+import numpy as np
 
 
 class Packet():
@@ -83,9 +84,9 @@ class Packet():
         data_size_bytes = data_size.to_bytes(Packet.SIZE_INDICATOR_SIZE, byteorder="big")
         ammount_bytes = ammount.to_bytes(Packet.NUMBER_SIZE, byteorder="big")
         number_bytes = number.to_bytes(Packet.NUMBER_SIZE, byteorder="big")
-        data_size_bytes = utils.split_bytes(data_size_bytes)
-        ammount_bytes = utils.split_bytes(ammount_bytes)
-        number_bytes = utils.split_bytes(number_bytes)
+        data_size_bytes = utils.splitBytes(data_size_bytes)
+        ammount_bytes = utils.splitBytes(ammount_bytes)
+        number_bytes = utils.splitBytes(number_bytes)
 
         # preenchimento do payload
         self.payload = self.data
@@ -94,7 +95,8 @@ class Packet():
 
         # junção das listas de bytes que formam o HEAD e o pacote completo
         self.head = Packet.HEAD_START_BYTES + ammount_bytes + number_bytes + data_size_bytes + Packet.HEAD_END_BYTES
-        self.bytes = self.head + self.payload + Packet.EOP_BYTES
+        self.bytes_list = self.head + self.payload + Packet.EOP_BYTES
+        self.bytes = np.asarray(self.bytes_list)
 
         # definição de demais propriedades
         self.total_size = len(self.bytes)
@@ -115,6 +117,7 @@ class Packet():
         '''
 
         # extrai o HEAD e o EOP
+        raw_packet = utils.splitBytes(raw_packet)
         head = raw_packet[ : Packet.HEAD_SIZE]
         eop = raw_packet[-1 * Packet.EOP_SIZE : ]
 

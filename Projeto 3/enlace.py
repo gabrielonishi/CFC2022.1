@@ -17,6 +17,8 @@ from interfaceFisica import fisica
 from enlaceRx import RX
 from enlaceTx import TX
 
+import numpy as np
+
 class enlace(object):
     
     def __init__(self, name):
@@ -37,6 +39,7 @@ class enlace(object):
         self.fisica.close()
 
     def sendData(self, data):
+        data = np.asarray(data)
         self.tx.sendBuffer(data)
         
     def getData(self, size, time_limit=5):
