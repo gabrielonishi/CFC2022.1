@@ -11,13 +11,14 @@ class Message():
     Classe que representa uma mensagem a ser enviada dividida em pacotes
 
     Propriedades:
-    - data: dados brutos a serem enviados
-    - packets: lista de instâncias de Packet que compõe a mensagem
+    - data_list: dados brutos a serem enviados (lista de bytes separados)
+    - packets: dicionário de instâncias de Packet que compõe a mensagem
     - data_size: tamanho dos dados úteis a serem enviados
     - total_size: tamanho de todos os pacotes somados
-    - bytes: lista de bytes dos dados separados em pacotes
     - number_of_packets: quantidade de pacotes que compõem a mensagem
     - is_complete: se a mensagem está completa ou não
+    - type: "in" ou "out" (a ser preenchida ou já preenchida)
+    - last_received: último pacote recebidoo, False para mensagem completa
 
     '''
 
@@ -32,7 +33,7 @@ class Message():
         '''
 
         # amarra os argumentos à instância de Message
-        self.data = data
+        self.data_list = data
         self.type = message_type
 
         # determina se a mensagem está completa ou não
@@ -81,7 +82,6 @@ class Message():
         # define demais propriedades
         self.total_size = len(self.bytes_list)
         self.data_size = len(self.data)
-        self.bytes = np.asarray(self.bytes_list)
 
 
     def receivePacket(self, raw_packet):
@@ -94,7 +94,7 @@ class Message():
         
         '''
 
-        if self.type == 'out': raise TypeError('Essa mensagem é de envio')
+        if self.is_complete: raise Exception('Essa mensagem já está completa')
 
         # decodifica o pacote e retorna False se houver falhas
         received_packet = Packet.decode(self, raw_packet)
@@ -112,8 +112,7 @@ class Message():
         # adiciona os dados do pacote aos dados totais da mensagem
         self.packets[received_packet.number] = received_packet
         self.bytes_list += received_packet.bytes_list
-        self.data += received_packet.data
-        self.bytes = np.asarray(self.bytes_list)
+        self.data_list += received_packet.data
 
         # atualiza demais propriedades
         self.number_of_packets = received_packet.ammount

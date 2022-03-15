@@ -16,15 +16,15 @@ class Packet():
     4 bytes - EOP: BB BB BB BB
 
     Propriedades:
-    - ammount: quantidade de datagramas 
+    - ammount: quantidade de pacotes 
     - message: objeto Message ao qual o pacote pertence
-    - ammount: quantidade de pacotes
     - number: identidade do pacote
-    - data: dados do pacote
-    - head: lista de bytes que compõem o HEAD
-    - bytes: lista de bytes pronta para envio
-    - data_size: tamanho do payload em bytes
-    - total_size: tamanho do pacote em bytes
+    - data_list: dados úteis do pacote (lista de bytes separados)
+    - head_list: lista de bytes separados que compõem o HEAD
+    - payload_list: lista de bytes do payload
+    - bytes_list: lista de bytes do pacote completo
+    - data_size: quantidade de dados úteis em bytes
+    - sendable: pacote pronto para envio
 
     '''
 
@@ -47,12 +47,12 @@ class Packet():
 
     # bytes de sinalização de início e fim do HEAD e EOP
     PAYLOAD_FILLER = [b'\x55']
-    HEAD_START_BYTES = [b'\xAA'] * HEAD_START_SIZE
-    HEAD_END_BYTES = [b'\xAA'] * HEAD_END_SIZE
-    EOP_BYTES = [b'\xBB'] * EOP_SIZE
+    HEAD_START_LIST = [b'\xAA'] * HEAD_START_SIZE
+    HEAD_END_LIST = [b'\xAA'] * HEAD_END_SIZE
+    EOP_LIST = [b'\xBB'] * EOP_SIZE
 
     # HEAD genérico para comparação com HEADs de pacotes recebidos
-    SAMPLE_HEAD = HEAD_START_BYTES + ['ammount'] * NUMBER_SIZE + ['number'] * NUMBER_SIZE + ['size'] * SIZE_INDICATOR_SIZE + HEAD_END_BYTES
+    SAMPLE_HEAD = HEAD_START_LIST + ['ammount'] * NUMBER_SIZE + ['number'] * NUMBER_SIZE + ['size'] * SIZE_INDICATOR_SIZE + HEAD_END_LIST
 
     def __init__(self, message, number, data):
         '''
@@ -77,8 +77,10 @@ class Packet():
         self.message = message
         self.ammount = ammount
         self.number = number
-        self.data = data
+        self.data_list = data
         self.data_size = data_size
+
+        # MONTAGEM DO HEAD  --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
         # conversão de number e ammount para 3 bytes cada
         data_size_bytes = data_size.to_bytes(Packet.SIZE_INDICATOR_SIZE, byteorder="big")
@@ -88,18 +90,20 @@ class Packet():
         ammount_bytes = utils.splitBytes(ammount_bytes)
         number_bytes = utils.splitBytes(number_bytes)
 
+        # junção dos componentes do head
+        self.head_list = Packet.HEAD_START_BYTES + ammount_bytes + number_bytes + data_size_bytes + Packet.HEAD_END_BYTES
+
+        #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
         # preenchimento do payload
-        self.payload = self.data
-        while len(self.payload) < Packet.PAYLOAD_SIZE:
-            self.payload += Packet.PAYLOAD_FILLER
+        self.payload_list = self.data_list
+        while len(self.payload_list) < Packet.PAYLOAD_SIZE:
+            self.payload_list += Packet.PAYLOAD_FILLER
 
         # junção das listas de bytes que formam o HEAD e o pacote completo
-        self.head = Packet.HEAD_START_BYTES + ammount_bytes + number_bytes + data_size_bytes + Packet.HEAD_END_BYTES
-        self.bytes_list = self.head + self.payload + Packet.EOP_BYTES
-        self.bytes = np.asarray(self.bytes_list)
+        self.bytes_list = self.head_list + self.payload_list + Packet.EOP_LIST
+        self.sendable = np.asarray(self.bytes_list)
 
-        # definição de demais propriedades
-        self.total_size = len(self.bytes)
     
 
     @staticmethod
@@ -168,7 +172,7 @@ class Packet():
         # percorre todos os bytes dos dados de ambos as instâncias
         equal = True
         for i in range(size):
-            equal = equal and (self.data[i] == other.data[i])
+            equal = equal and (self.data_list[i] == other.data_list[i])
             if not equal: return False
 
         return True
