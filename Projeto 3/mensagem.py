@@ -81,7 +81,7 @@ class Message():
 
         # define demais propriedades
         self.total_size = len(self.bytes_list)
-        self.data_size = len(self.data)
+        self.data_size = len(self.data_list)
 
 
     def receivePacket(self, raw_packet):
@@ -112,7 +112,7 @@ class Message():
         # adiciona os dados do pacote aos dados totais da mensagem
         self.packets[received_packet.number] = received_packet
         self.bytes_list += received_packet.bytes_list
-        self.data_list += received_packet.data
+        self.data_list += received_packet.data_list
 
         # atualiza demais propriedades
         self.number_of_packets = received_packet.ammount

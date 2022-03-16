@@ -86,12 +86,12 @@ class Packet():
         data_size_bytes = data_size.to_bytes(Packet.SIZE_INDICATOR_SIZE, byteorder="big")
         ammount_bytes = ammount.to_bytes(Packet.NUMBER_SIZE, byteorder="big")
         number_bytes = number.to_bytes(Packet.NUMBER_SIZE, byteorder="big")
-        data_size_bytes = utils.splitBytes(data_size_bytes)
-        ammount_bytes = utils.splitBytes(ammount_bytes)
-        number_bytes = utils.splitBytes(number_bytes)
+        data_size_bytes_list = utils.splitBytes(data_size_bytes)
+        ammount_bytes_list = utils.splitBytes(ammount_bytes)
+        number_bytes_list = utils.splitBytes(number_bytes)
 
         # junção dos componentes do head
-        self.head_list = Packet.HEAD_START_BYTES + ammount_bytes + number_bytes + data_size_bytes + Packet.HEAD_END_BYTES
+        self.head_list = Packet.HEAD_START_LIST + ammount_bytes_list + number_bytes_list + data_size_bytes_list + Packet.HEAD_END_LIST
 
         #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
@@ -143,7 +143,8 @@ class Packet():
         #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
         # verifica a validade do EOP
-        if eop != Packet.EOP_BYTES:
+        if eop != Packet.EOP_LIST:
+            print("EOP invalid")
             return None
 
         # extrai o payload
