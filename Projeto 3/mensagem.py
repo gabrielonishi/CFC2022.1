@@ -3,6 +3,7 @@
 import math
 import numpy as np
 
+import utils
 from pacote import Packet
 
 class Message():
@@ -33,7 +34,8 @@ class Message():
         '''
 
         # amarra os argumentos à instância de Message
-        self.data_list = data
+        if isinstance(data, bytes): self.data_list = utils.splitBytes(data)
+        else: self.data_list = data
         self.type = message_type
 
         # determina se a mensagem está completa ou não
@@ -70,7 +72,7 @@ class Message():
             to_index = (i + 1) * payload_size
 
             # extrai o intervalo e cria um datagrama com o payload
-            payload = data[from_index:to_index]
+            payload = self.data_list[from_index:to_index]
             packet = Packet(self, i + 1, payload)
 
             # adiciona o datagrama à lista de datagramas e preenche a lista de bytes
@@ -136,7 +138,7 @@ class Message():
 
         # percorre todos os pacotes de ambas as instâncias
         equal = True
-        for i in range(1, number_of_packets + 1):
+        for i in range(1, size + 1):
             equal = equal and (self.packets[i] == other.packets[i])
             if not equal: return False
 

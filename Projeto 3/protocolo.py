@@ -50,7 +50,7 @@ def validateHandshake(message):
 	for i in range(message.data_size):
 
 		expected_value = HANDSHAKE_TEMPLATE[i]
-		received_byte = message.data[i]
+		received_byte = message.data_list[i]
 
 		# lida com bytes variáveis
 		if isinstance(expected_value, str):
@@ -60,7 +60,7 @@ def validateHandshake(message):
 		elif received_byte != expected_value: return (False, None)
 
 	ammount_bytes = b''.join(ammount_bytes)
-	ammount = int.from_bytes(ammount_bytes)
+	ammount = int.from_bytes(ammount_bytes, byteorder="big")
 
 	return (True, ammount)
 

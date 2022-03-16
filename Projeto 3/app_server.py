@@ -1,7 +1,7 @@
 '''
 
 Camada Física da Computação, 2022.1
-Script de recepção de comandos do Projeto 2
+Script do servidor do Projeto 3
 
 Gabriel Onishi
 Jerônimo Afrange
@@ -14,7 +14,7 @@ from mensagem import Message
 import utils
 import protocolo as protocol
 
-from sys import byteorder
+import sys
 import time
 import numpy as np
 
@@ -50,12 +50,14 @@ def main():
         print("*"*50)
         print("INÍCIO DO RECEBIMENTO\n")
 
+        # loop de recepção de handshake
         while True:
 
             print("Aguardando o handshake...")
 
             rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
             com1.rx.clearBuffer()
+            print(utils.splitBytes(rxBuffer))
 
             # em caso de timeout
             if rxBuffer is None:
@@ -70,8 +72,9 @@ def main():
 
             # em caso de handshake fora dos padrões do datagrama -- --- --- ---
             if not reception_success:
-                print('Handshake fora dos conformes do datagrama\n')
-                com1.sendData(failure_message.bytes)
+                print('\nHandshake fora dos conformes do datagrama\n')
+                print(failure_message.packets[1].bytes_list)
+                com1.sendData(failure_message.packets[1].sendable)
                 com1.rx.clearBuffer()
                 continue
             #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
@@ -79,14 +82,17 @@ def main():
             # verifica se o servidor indicou sucesso de transmissão --- --- ---
             valid, number_of_packets = protocol.validateHandshake(handshake_in)
             if valid:
-                print('Handshake recebido, enviando de volta...\n')
-                com1.sendData(handshake_in.bytes)
+                print('\nHandshake recebido, enviando de volta...\n')
+                print(handshake_in.packets[1].bytes_list)
+                com1.sendData(handshake_in.packets[1].sendable)
                 com1.rx.clearBuffer()
                 break
             #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
         print("FIM DO HANDSHAKE")
         print("*"*50)
+
+        '''
 
         print()
         print("*"*50)
@@ -113,7 +119,9 @@ def main():
                     print("TIMEOUT")
                     tryAgain = utils.tryAgainPrompt()
                     if tryAgain: continue
-                    else: sys.exit()
+                    else:
+                        com1.disable()
+                        sys.exit()
                 #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
                 # validação da mensagem
@@ -131,45 +139,16 @@ def main():
                     break
                 #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-        # verbose de fim de transmissão
-        print("FIM DA TRANSMISSÃO")
-        print("*"*50)
-
-
-
-
-        # Verificar primeiro xAA pra ter certeza que é o pacote de handshake
-        # if rxBuffer==b'\xAA': 
-            
-
-        # RECEBENDO DADOS
-
-        # rxBuffer, nRx = com1.getData(1)       
-        
-        # Enviando o número de instruções de volta
-
-        # txBuffer = bytes([n_recebidos])
-
-        print("FIM DO RECEBIMENTO")
-        print("*"*50)
-        print("INÍCIO DA TRANSMISSÃO\n")
-        
-        # print(f"Mandando: \n{txBuffer}")
-        # com1.sendData(np.asarray(txBuffer))
-
-        # time.sleep(11)
-
-        print("FIM DA TRANSMISSÃO\n")
-        print("*"*50)
+        '''
 
         # Encerra comunicação
         print("\nCOMUNICAÇÃO ENCERRADA\n\n")
         com1.disable()
 
-    except Exception:
-        print("ops! :-\\")
-        print(erro)
+    except Exception as erro:
+        print("\nops! :-\\\n")
         com1.disable()
+        raise erro
         
 
     #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda

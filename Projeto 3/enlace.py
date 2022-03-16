@@ -39,7 +39,6 @@ class enlace(object):
         self.fisica.close()
 
     def sendData(self, data):
-        data = np.asarray(data)
         self.tx.sendBuffer(data)
         
     def getData(self, size, time_limit=5):

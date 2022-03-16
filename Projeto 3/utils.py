@@ -11,7 +11,7 @@ def tryAgainPrompt():
 
     while True:
 
-        answer = input("Tentar novamente? S/N")
+        answer = input("Tentar novamente? S/N\n")
         if answer.upper() == "N": return False
         elif answer.upper() == "S": return True
         else: print("Não entendi.\n")
