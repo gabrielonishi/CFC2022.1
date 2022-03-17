@@ -23,7 +23,7 @@ class Message():
 
     '''
 
-    def __init__(self, message_type, data=[]):
+    def __init__(self, message_type, data):
         '''
         Inicializa um objeto Message
 
@@ -84,6 +84,7 @@ class Message():
         # define demais propriedades
         self.total_size = len(self.bytes_list)
         self.data_size = len(self.data_list)
+        self.bytes = np.asarray(self.data_list)
 
 
     def receivePacket(self, raw_packet):
@@ -120,6 +121,7 @@ class Message():
         self.number_of_packets = received_packet.ammount
         self.total_size += Packet.PACKET_SIZE
         self.data_size += received_packet.data_size
+        self.bytes = np.asarray(self.data_list)
         
         return True
 
@@ -130,11 +132,11 @@ class Message():
         # verifica se other é Message também
         if not isinstance(other, Message): return False
 
-        # renomeia propriedades
-        size = self.number_of_packets
-
         # verifica o tamanho de ambas as instâncias
         if self.data_size != other.data_size: return False
+
+        # renomeia propriedades
+        size = self.number_of_packets
 
         # percorre todos os pacotes de ambas as instâncias
         equal = True

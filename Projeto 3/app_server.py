@@ -67,7 +67,7 @@ def main():
                     com1.disable()
                     sys.exit()
 
-            handshake_in = Message("in")
+            handshake_in = Message("in", [])
             failure_message = Message("out", protocol.PACKET_ERROR_DATA)
             reception_success = handshake_in.receivePacket(rxBuffer)
 

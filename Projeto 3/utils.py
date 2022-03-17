@@ -2,8 +2,12 @@
     Arquivo de utilidades
 """
 
-def splitBytes(data): 
-    return [data[i:i + 1] for i in range(0, len(data), 1)]
+def splitBytes(data):
+    split_data = [data[i:i + 1] for i in range(0, len(data), 1)]
+    result = list()
+    for data in split_data:
+        result.append(bytes(data))
+    return result
 
 
 

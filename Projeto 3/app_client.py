@@ -45,7 +45,6 @@ def main():
         # criação da instância Message dos dados a serem transferidos
         img_bytes = open("./img_teste.png", 'rb').read()
         message = Message("out", img_bytes)
-        print(message.number_of_packets)
 
         # enviando byte de sacrifício (necessário por conta de problemas de hardware)
         com1.sendData(b'00')
@@ -81,11 +80,10 @@ def main():
         while True:
 
             # Message de recebimento da resposta ao handshake
-            handshake_in = Message("in")
+            handshake_in = Message("in", [])
 
             # Envio do handshake
             print("Enviando handshake")
-            print(handshake_out.packets[1].bytes_list)
             com1.sendData(handshake_out.packets[1].sendable)
             time.sleep(0.1)
                 
@@ -93,7 +91,6 @@ def main():
             print("Aguardando handshake de volta")
             rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
             com1.rx.clearBuffer()
-            print(utils.splitBytes(rxBuffer))
 
             # em caso de timeout    --- --- --- --- --- --- --- --- --- --- ---
             if rxBuffer is None:
@@ -130,11 +127,11 @@ def main():
         
         '''
 
-        '''
+        
             
         # verbose de início de transmissão
         print("*"*50)
-        print("INÍCIO DA TRANSMISSÃO\n")
+        print("INÍCIO DA TRANSMISSÃO (%d)\n" % message.number_of_packets)
 
         # mensagens de sucesso e falha
         success_message = Message("out", protocol.PACKET_RECEIVED_DATA)
@@ -146,14 +143,13 @@ def main():
             # loop de tentativa
             while True:
 
-                validation_message = Message("in")
+                validation_message = Message("in", [])
 
                 print("%d/%d... " % (packet_id, message.number_of_packets), end='\t')
 
                 packet = message.packets[packet_id]
-                com1.sendData(packet.bytes)
-                com1.tx.clearBuffer()
-                time.sleep(0.1)
+                com1.sendData(packet.sendable)
+                #time.sleep(0.1)
 
                 # recepção da confirmação
                 rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
@@ -190,12 +186,14 @@ def main():
 
                 else: print('CONFIRMAÇÃO INVÁLIDA')
 
+
+
         # verbose de fim de transmissão
         print("FIM DA TRANSMISSÃO")
         print("*"*50)
 
 
-        '''
+        
         print("\nCOMUNICAÇÃO ENCERRADA\n\n")
         com1.disable()
 
