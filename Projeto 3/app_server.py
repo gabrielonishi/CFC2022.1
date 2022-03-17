@@ -57,14 +57,15 @@ def main():
 
             rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
             com1.rx.clearBuffer()
-            print(utils.splitBytes(rxBuffer))
 
             # em caso de timeout
             if rxBuffer is None:
                 print("Timeout")
                 tryAgain = utils.tryAgainPrompt()
                 if tryAgain: continue
-                else: sys.exit()
+                else:
+                    com1.disable()
+                    sys.exit()
 
             handshake_in = Message("in")
             failure_message = Message("out", protocol.PACKET_ERROR_DATA)
@@ -73,9 +74,7 @@ def main():
             # em caso de handshake fora dos padrões do datagrama -- --- --- ---
             if not reception_success:
                 print('\nHandshake fora dos conformes do datagrama\n')
-                print(failure_message.packets[1].bytes_list)
                 com1.sendData(failure_message.packets[1].sendable)
-                com1.rx.clearBuffer()
                 continue
             #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
@@ -83,32 +82,30 @@ def main():
             valid, number_of_packets = protocol.validateHandshake(handshake_in)
             if valid:
                 print('\nHandshake recebido, enviando de volta...\n')
-                print(handshake_in.packets[1].bytes_list)
                 com1.sendData(handshake_in.packets[1].sendable)
-                com1.rx.clearBuffer()
                 break
             #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
         print("FIM DO HANDSHAKE")
         print("*"*50)
 
-        '''
+        
 
         print()
         print("*"*50)
-        print("RECEBENDO PACOTES\n")
+        print("RECEBENDO PACOTES (%d)\n" % number_of_packets)
 
-        message_in = Message("in")
+        message_in = Message("in", [])
 
         error_response = Message("out", protocol.PACKET_ERROR_DATA)
         success_response = Message("out", protocol.PACKET_RECEIVED_DATA)
         
         # loop de recebimento de pacotes
-        for packet_id in range(1, ammount + 1):
+        for packet_id in range(1, number_of_packets + 1):
 
             while True:
 
-                print("%d/%d... " % (packet_id, ammount), end='\t')
+                print("%d/%d... " % (packet_id, number_of_packets), end='\t')
 
                 # recebimento dos dados
                 rxBuffer, nRx = com1.getData(Packet.PACKET_SIZE)
@@ -125,25 +122,36 @@ def main():
                 #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
                 # validação da mensagem
-                reception_success = validation_message.receivePacket(rxBuffer)
+                reception_success = message_in.receivePacket(rxBuffer)
 
                 # em caso de pacote fora dos padrões do datagrama --- --- --- ---
                 if not reception_success:
                     print('PACOTE FORA DOS PADRÕES')
+                    com1.sendData(error_response.packets[1].sendable)
                     continue
                 #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
                 # verifica se o servidor indicou sucesso de transmissão --- --- ---
                 else:
                     print('OK')
+                    com1.sendData(success_response.packets[1].sendable)
                     break
                 #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-        '''
-
+        
+        time.sleep(1)
         # Encerra comunicação
         print("\nCOMUNICAÇÃO ENCERRADA\n\n")
         com1.disable()
+
+        img_bytes = open("./img_teste.png", 'rb').read()
+        message = Message("out", img_bytes)
+
+        if message == message_in: print("Sucesso")
+        else: print("Falha")
+
+        with open("imagem_recebida.png", "wb") as file:
+            file.write(message_in.bytes)
 
     except Exception as erro:
         print("\nops! :-\\\n")
