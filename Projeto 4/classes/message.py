@@ -6,10 +6,11 @@ import numpy as np
 import utils
 from pacote import Packet
 
-class Message():
+class Message:
     '''
 
-    Classe que representa uma mensagem a ser enviada dividida em pacotes
+    Classe que representa uma mensagem a ser enviada.
+    É essencialmente uma conjunto de Packets
 
     Propriedades:
     - data_list: dados brutos a serem enviados (lista de bytes separados)
@@ -23,13 +24,14 @@ class Message():
 
     '''
 
-    def __init__(self, message_type, data):
+    def __init__(self, direction, message_type, data):
         '''
         Inicializa um objeto Message
 
         Parâmetros:
-        - message_type: tipo da mensagem, "in" ou "out"
-        - data: lista de bytes dos dados não separados
+        - direction: mensagem a ser recebida ou enviada ("in" ou "out")
+        - message_type: tipo da mensagem (1, 2, 3, 4, 5 ou 6)
+        - data: lista de bytes dos dados
         
         '''
 

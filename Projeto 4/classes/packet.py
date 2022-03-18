@@ -7,13 +7,12 @@ import utils
 import numpy as np
 
 
-class Packet():
+class Packet:
     '''
-    Representa um tipo de pacote definido pelo datagrama especificado no enunciado
+    Representa um tipo de pacote definido por um datagrama.
 
-    10 bytes - HEAD: AA AA 2{qtde total de datagramas} 2{número do datagrama} {tamanho dos dados} AA AA AA
-    114 bytes - PAYLOAD
-    4 bytes - EOP: BB BB BB BB
+    Está sempre associado a um objeto Message, porque não existem
+    pacotes avulsos, apenas mensagens de pacote único.
 
     Propriedades:
     - ammount: quantidade de pacotes 
@@ -35,7 +34,6 @@ class Packet():
     HEAD_END_SIZE = 3                       # quantidade de bytes que compõem o fim do HEAD
     PAYLOAD_SIZE = 114                      # tamanho do payload em bytes
     EOP_SIZE = 4                            # tamanho do EOP em bytes
-
     #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
     # especificações derivadas  --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
@@ -59,9 +57,9 @@ class Packet():
         Inicializa um único pacote pertencente a uma mensagem
 
         Parâmetros:
-        - message: objeto Message para agrupar datagramas relacionados
-        - number: número do datagrama (int) (o número 1 é o primeiro)
-        - data: dados (lista de bytes, no máximo 114 bytes)
+        - message: objeto Message ao qual o pacote pertence
+        - number: número do pacote (int) (o número 1 é o primeiro)
+        - data: dados (lista de bytes)
 
         '''
 
