@@ -5,7 +5,7 @@ Arquivo criado para armazenar a classe Packet
 
 import utils
 import numpy as np
-
+from protocol import Protocol
 
 class Packet:
     '''
@@ -17,6 +17,7 @@ class Packet:
     Propriedades:
     - ammount: quantidade de pacotes 
     - message: objeto Message ao qual o pacote pertence
+    - message_type: tipo de mensagem (varia de 1-6)
     - number: identidade do pacote
     - data_list: dados úteis do pacote (lista de bytes separados)
     - head_list: lista de bytes separados que compõem o HEAD
@@ -27,52 +28,71 @@ class Packet:
 
     '''
 
+    # define os templates
+    HEAD_TEMPLATES = {
+        1: [b'\x01', b'\xAA', b'\xAA', b'\x01', b'\x01', 'server_id', b'\x00', b'\x00', b'\xAA', b'\xAA'],
+        2: [b'\x02', b'\xAA', b'\xAA', b'\x01', b'\x01', 'client_id', b'\x00', b'\x00', b'\xAA', b'\xAA'],
+        3: [b'\x03', b'\xAA', b'\xAA', 'number_of_packets', 'packet_id', 'payload_size', b'\x00', b'\x00', b'\xAA', b'\xAA'],
+        4: [b'\x04', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', b'\x00', 'last_successful_packet', b'\xAA', b'\xAA'],
+        5: [b'\x05', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', b'\x00', b'\x00', b'\xAA', b'\xAA'],
+        6: [b'\x06', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', 'wanted_packet', b'\x00', b'\xAA', b'\xAA']
+    }
+
     # especificações do datagrama para referenciamento  --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-    HEAD_START_SIZE = 2                     # quantidade de bytes que compõem o início do HEAD
-    NUMBER_SIZE = 2                         # tamanho do número do pacote em bytes
-    SIZE_INDICATOR_SIZE = 1                 # tamanho do número que indica o tamanho do payload
-    HEAD_END_SIZE = 3                       # quantidade de bytes que compõem o fim do HEAD
-    PAYLOAD_SIZE = 114                      # tamanho do payload em bytes
+    MESSAGE_TYPE_SIZE = 1                   # h0: bytes reservados p/ informar tipo de mensagem
+    
+    # ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
+    # Ver o que fazer com esses bytes livres
+    FREE_BYTES_SIZE = 2                     # h1 e h2: quantidade de bytes livres, xAA
+    # ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
+    
+    SIZE_INDICATOR_SIZE = 1                 # h3: bytes reservados p/ informar o número total de pacotes
+    NUMBER_SIZE = 1                         # h4: bytes reservados p/ informar o número do pacote
+    ID_OR_PAYLOAD_SIZE                      # h5: bytes reservados p/ id se for handshake e tamanho do payload se for dado
+    ERROR_SIZE                              # h6: bytes reservados p/ informar quando há erro no envio
+    LAST_GOOD_PACKET_SIZE                   # h7: bytes reservados p/ informar o número do último pacote recebido com sucesso
+    CRC_SIZE = 3                            # h8 e h9: bytes reservados p/ informar o CRC. Por enquanto não usamos, xAA
+    MAX_PAYLOAD_SIZE = 114                  # tamanho do payload em bytes
     EOP_SIZE = 4                            # tamanho do EOP em bytes
     #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
     # especificações derivadas  --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-    HEAD_SIZE =  HEAD_START_SIZE + NUMBER_SIZE * 2 + SIZE_INDICATOR_SIZE + HEAD_END_SIZE
+    HEAD_SIZE = (MESSAGE_TYPE_SIZE + HEAD_START_SIZE + AMMOUNT_SIZE 
+    + NUMBER_SIZE + ID_OR_PAYLOAD_SIZE + ERROR_SIZE + LAST_GOOD_PACKET_SIZE 
+    + CRC_SIZE + MAX_PAYLOAD_SIZE + EOP_SIZE)               # tamanho do head
     MAX_PACKETS = 256 ** NUMBER_SIZE                        # quantidade máxima de pacotes em uma mensagem
-    MAX_DATA = MAX_PACKETS * PAYLOAD_SIZE                   # quantidade máxima de bytes úteis
-    PACKET_SIZE = HEAD_SIZE + PAYLOAD_SIZE + EOP_SIZE       # tamanho de um único pacote
+    MAX_DATA = MAX_PACKETS * MAX_PAYLOAD_SIZE               # quantidade máxima de bytes úteis
     #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
     # bytes de sinalização de início e fim do HEAD e EOP
-    PAYLOAD_FILLER = [b'\x55']
-    HEAD_START_LIST = [b'\xAA'] * HEAD_START_SIZE
-    HEAD_END_LIST = [b'\xAA'] * HEAD_END_SIZE
-    EOP_LIST = [b'\xBB'] * EOP_SIZE
+    FREE_BYTES_LIST = [b'\xAA'] * FREE_BYTES_SIZE
+    CRC_LIST = [b'\xAA'] * 2
+    EOP_LIST = [b'\xAA' + b'\xBB' + b'\xCC' + b'\xDD']      # padronizado pelo enunciado do projeto
 
-    # HEAD genérico para comparação com HEADs de pacotes recebidos
-    SAMPLE_HEAD = HEAD_START_LIST + ['ammount'] * NUMBER_SIZE + ['number'] * NUMBER_SIZE + ['size'] * SIZE_INDICATOR_SIZE + HEAD_END_LIST
+    # gerando um template pra sabermos como vai ser o formato do head
+    HEAD_TEMPLATE = (['tipo'] + FREE_BYTES_LIST + ['size'] + ['number']
+    + ['number'] + ['id ou payload'] + ['error'] + ['último pacote recebido'] + CRC_LIST)
 
-    def __init__(self, message, number, data):
+    def __init__(self, message, head_info, data):
         '''
         Inicializa um único pacote pertencente a uma mensagem
 
         Parâmetros:
         - message: objeto Message ao qual o pacote pertence
-        - number: número do pacote (int) (o número 1 é o primeiro)
+        - head_info: número do pacote (int) (o número 1 é o primeiro)
         - data: dados (lista de bytes)
 
         '''
+
+        head_info['number_of_payload'] = len(data)
 
         # cria uma variável para o tamanho do payload e extrai o tamanho da mensagem em pacotes
         data_size = len(data)
         ammount = message.number_of_packets
 
-        # verifica parâmetros inválidos
-        if number > ammount: raise ValueError('Número do pacote maior que o número total de pacotes')
-        if data_size > Packet.PAYLOAD_SIZE: raise ValueError('Payload grande demais')
-
         # amarra os argumentos ao objeto
         self.message = message
+        self.message_type = message.type
         self.ammount = ammount
         self.number = number
         self.data_list = data
@@ -80,23 +100,32 @@ class Packet:
 
         # MONTAGEM DO HEAD  --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-        # conversão de number e ammount para 3 bytes cada
+        # conversão de number e ammount para 1 byte cada
         data_size_bytes = data_size.to_bytes(Packet.SIZE_INDICATOR_SIZE, byteorder="big")
         ammount_bytes = ammount.to_bytes(Packet.NUMBER_SIZE, byteorder="big")
         number_bytes = number.to_bytes(Packet.NUMBER_SIZE, byteorder="big")
+        message_type_bytes = message.type.to_bytes(Packet.MESSAGE_TYPE_SIZE, byteorder="big")
         data_size_bytes_list = utils.splitBytes(data_size_bytes)
         ammount_bytes_list = utils.splitBytes(ammount_bytes)
         number_bytes_list = utils.splitBytes(number_bytes)
 
-        # junção dos componentes do head
-        self.head_list = Packet.HEAD_START_LIST + ammount_bytes_list + number_bytes_list + data_size_bytes_list + Packet.HEAD_END_LIST
+    #     HEAD_TEMPLATES = {
+    #     1: [b'\x01', b'\xAA', b'\xAA', b'\x01', b'\x01', 'server_id', b'\x00', b'\x00', b'\xAA', b'\xAA'],
+    #     2: [b'\x02', b'\xAA', b'\xAA', b'\x01', b'\x01', 'client_id', b'\x00', b'\x00', b'\xAA', b'\xAA'],
+    #     3: [b'\x03', b'\xAA', b'\xAA', 'number_of_packets', 'packet_id', 'payload_size', b'\x00', b'\x00', b'\xAA', b'\xAA'],
+    #     4: [b'\x04', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', b'\x00', 'last_successful_packet', b'\xAA', b'\xAA'],
+    #     5: [b'\x05', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', b'\x00', b'\x00', b'\xAA', b'\xAA'],
+    #     6: [b'\x06', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', 'wanted_packet', b'\x00', b'\xAA', b'\xAA']
+    # }
+
+        header = HEAD_TEMPLATES.get[message.type]
+        for i in range(len(header)):
+            if isinstance(header[i], str):
+                if i == 3: header[3] = ammount_bytes
+                if i == 4: header[4] = 
+
 
         #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-
-        # preenchimento do payload
-        self.payload_list = self.data_list
-        while len(self.payload_list) < Packet.PAYLOAD_SIZE:
-            self.payload_list += Packet.PAYLOAD_FILLER
 
         # junção das listas de bytes que formam o HEAD e o pacote completo
         self.bytes_list = self.head_list + self.payload_list + Packet.EOP_LIST
