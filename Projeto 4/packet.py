@@ -5,7 +5,6 @@ Arquivo criado para armazenar a classe Packet
 
 import utils
 import numpy as np
-from protocol import Protocol
 
 class Packet:
     '''
@@ -38,6 +37,9 @@ class Packet:
         6: [b'\x06', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', 'wanted_packet', b'\x00', b'\xAA', b'\xAA']
     }
 
+    # define o tamanho dos payloads que cada tipo de mensagem
+    MESSAGE_TYPE_PAYLOAD_SIZE = {1: 1, 2: 1, 3: 'variable', 4: 0, 5: 0, 6: 0}
+
     # especificações do datagrama para referenciamento  --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
     MESSAGE_TYPE_SIZE = 1                   # h0: bytes reservados p/ informar tipo de mensagem
     
@@ -48,18 +50,18 @@ class Packet:
     
     SIZE_INDICATOR_SIZE = 1                 # h3: bytes reservados p/ informar o número total de pacotes
     NUMBER_SIZE = 1                         # h4: bytes reservados p/ informar o número do pacote
-    ID_OR_PAYLOAD_SIZE                      # h5: bytes reservados p/ id se for handshake e tamanho do payload se for dado
-    ERROR_SIZE                              # h6: bytes reservados p/ informar quando há erro no envio
-    LAST_GOOD_PACKET_SIZE                   # h7: bytes reservados p/ informar o número do último pacote recebido com sucesso
-    CRC_SIZE = 3                            # h8 e h9: bytes reservados p/ informar o CRC. Por enquanto não usamos, xAA
+    ID_OR_PAYLOAD_SIZE = 1                  # h5: bytes reservados p/ id se for handshake e tamanho do payload se for dado
+    ERROR_SIZE = 1                          # h6: bytes reservados p/ informar quando há erro no envio
+    LAST_GOOD_PACKET_SIZE = 1               # h7: bytes reservados p/ informar o número do último pacote recebido com sucesso
+    CRC_SIZE = 2                            # h8 e h9: bytes reservados p/ informar o CRC. Por enquanto não usamos, xAA
     MAX_PAYLOAD_SIZE = 114                  # tamanho do payload em bytes
     EOP_SIZE = 4                            # tamanho do EOP em bytes
     #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
     # especificações derivadas  --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-    HEAD_SIZE = (MESSAGE_TYPE_SIZE + HEAD_START_SIZE + AMMOUNT_SIZE 
+    HEAD_SIZE = (MESSAGE_TYPE_SIZE + FREE_BYTES_SIZE + SIZE_INDICATOR_SIZE 
     + NUMBER_SIZE + ID_OR_PAYLOAD_SIZE + ERROR_SIZE + LAST_GOOD_PACKET_SIZE 
-    + CRC_SIZE + MAX_PAYLOAD_SIZE + EOP_SIZE)               # tamanho do head
+    + CRC_SIZE)                                             # tamanho do head
     MAX_PACKETS = 256 ** NUMBER_SIZE                        # quantidade máxima de pacotes em uma mensagem
     MAX_DATA = MAX_PACKETS * MAX_PAYLOAD_SIZE               # quantidade máxima de bytes úteis
     #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
@@ -73,18 +75,16 @@ class Packet:
     HEAD_TEMPLATE = (['tipo'] + FREE_BYTES_LIST + ['size'] + ['number']
     + ['number'] + ['id ou payload'] + ['error'] + ['último pacote recebido'] + CRC_LIST)
 
-    def __init__(self, message, head_info, data):
+    def __init__(self, message, number, data):
         '''
         Inicializa um único pacote pertencente a uma mensagem
 
         Parâmetros:
         - message: objeto Message ao qual o pacote pertence
-        - head_info: número do pacote (int) (o número 1 é o primeiro)
+        - number: número do pacote (int) (o número 1 é o primeiro)
         - data: dados (lista de bytes)
 
         '''
-
-        head_info['number_of_payload'] = len(data)
 
         # cria uma variável para o tamanho do payload e extrai o tamanho da mensagem em pacotes
         data_size = len(data)
@@ -109,22 +109,9 @@ class Packet:
         ammount_bytes_list = utils.splitBytes(ammount_bytes)
         number_bytes_list = utils.splitBytes(number_bytes)
 
-    #     HEAD_TEMPLATES = {
-    #     1: [b'\x01', b'\xAA', b'\xAA', b'\x01', b'\x01', 'server_id', b'\x00', b'\x00', b'\xAA', b'\xAA'],
-    #     2: [b'\x02', b'\xAA', b'\xAA', b'\x01', b'\x01', 'client_id', b'\x00', b'\x00', b'\xAA', b'\xAA'],
-    #     3: [b'\x03', b'\xAA', b'\xAA', 'number_of_packets', 'packet_id', 'payload_size', b'\x00', b'\x00', b'\xAA', b'\xAA'],
-    #     4: [b'\x04', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', b'\x00', 'last_successful_packet', b'\xAA', b'\xAA'],
-    #     5: [b'\x05', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', b'\x00', b'\x00', b'\xAA', b'\xAA'],
-    #     6: [b'\x06', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', 'wanted_packet', b'\x00', b'\xAA', b'\xAA']
-    # }
-
-        header = HEAD_TEMPLATES.get[message.type]
-        for i in range(len(header)):
-            if isinstance(header[i], str):
-                if i == 3: header[3] = head_info['number_of_packets']
-                elif i == 4: header[4] = head_info['packet_id']
-                elif i == 6: header[6] = head_info['']
-
+        # head_list = HEAD_TEMPLATES.get[message.type]
+        # for element in template:
+        #     if element == 'server_id': head_list[]
 
         #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
