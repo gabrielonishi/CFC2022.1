@@ -73,18 +73,16 @@ class Packet:
     HEAD_TEMPLATE = (['tipo'] + FREE_BYTES_LIST + ['size'] + ['number']
     + ['number'] + ['id ou payload'] + ['error'] + ['último pacote recebido'] + CRC_LIST)
 
-    def __init__(self, message, head_info, data):
+    def __init__(self, message, number, data):
         '''
         Inicializa um único pacote pertencente a uma mensagem
 
         Parâmetros:
         - message: objeto Message ao qual o pacote pertence
-        - head_info: número do pacote (int) (o número 1 é o primeiro)
+        - number: número do pacote (int) (o número 1 é o primeiro)
         - data: dados (lista de bytes)
 
         '''
-
-        head_info['number_of_payload'] = len(data)
 
         # cria uma variável para o tamanho do payload e extrai o tamanho da mensagem em pacotes
         data_size = len(data)
@@ -109,22 +107,9 @@ class Packet:
         ammount_bytes_list = utils.splitBytes(ammount_bytes)
         number_bytes_list = utils.splitBytes(number_bytes)
 
-    #     HEAD_TEMPLATES = {
-    #     1: [b'\x01', b'\xAA', b'\xAA', b'\x01', b'\x01', 'server_id', b'\x00', b'\x00', b'\xAA', b'\xAA'],
-    #     2: [b'\x02', b'\xAA', b'\xAA', b'\x01', b'\x01', 'client_id', b'\x00', b'\x00', b'\xAA', b'\xAA'],
-    #     3: [b'\x03', b'\xAA', b'\xAA', 'number_of_packets', 'packet_id', 'payload_size', b'\x00', b'\x00', b'\xAA', b'\xAA'],
-    #     4: [b'\x04', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', b'\x00', 'last_successful_packet', b'\xAA', b'\xAA'],
-    #     5: [b'\x05', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', b'\x00', b'\x00', b'\xAA', b'\xAA'],
-    #     6: [b'\x06', b'\xAA', b'\xAA', b'\x01', b'\x01', b'\x00', 'wanted_packet', b'\x00', b'\xAA', b'\xAA']
-    # }
-
-        header = HEAD_TEMPLATES.get[message.type]
-        for i in range(len(header)):
-            if isinstance(header[i], str):
-                if i == 3: header[3] = head_info['number_of_packets']
-                elif i == 4: header[4] = head_info['packet_id']
-                elif i == 6: header[6] = head_info['']
-
+        head_list = HEAD_TEMPLATES.get[message.type]
+        for element in template:
+            if element == 'server_id': head_list[]
 
         #   --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 

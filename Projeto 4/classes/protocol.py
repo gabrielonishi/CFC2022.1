@@ -33,7 +33,7 @@ class Protocol:
 		''' Chama getData para o tamanho do head e retorna os dados obtidos em lista de byte '''
 
 		# chama getData, gera um erro de Timeout caso dê timeout
-		data = self.enlace.getData(Packet.HEAD_SIZE)
+		data = self.enlace.getData(Packet.HEAD_SIZE, time)
 		if data is None: raise Protocol.TimeoutError()
 
 		# converte os dados recebidos a uma lista de bytes
