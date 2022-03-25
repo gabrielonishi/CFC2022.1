@@ -69,7 +69,7 @@ class Packet:
     # bytes de sinalização de início e fim do HEAD e EOP
     FREE_BYTES_LIST = [b'\xAA'] * FREE_BYTES_SIZE
     CRC_LIST = [b'\xAA'] * 2
-    EOP_LIST = [b'\xAA' + b'\xBB' + b'\xCC' + b'\xDD']      # padronizado pelo enunciado do projeto
+    EOP_LIST = [b'\xAA', b'\xBB', b'\xCC', b'\xDD']         # padronizado pelo enunciado do projeto
 
     # gerando um template pra sabermos como vai ser o formato do head
     HEAD_TEMPLATE = (['tipo'] + FREE_BYTES_LIST + ['size'] + ['number']

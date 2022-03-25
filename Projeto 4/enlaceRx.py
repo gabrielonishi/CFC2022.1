@@ -15,6 +15,10 @@ import threading
 
 # Class
 class RX(object):
+
+    class RXError(Exception): pass
+    class RXNotEnoughDataError(RXError): pass
+    class RXTimeoutError(RXError): pass
   
     def __init__(self, fisica):
         self.fisica      = fisica
@@ -71,16 +75,22 @@ class RX(object):
 
         start = time.time()
 
-        while(self.getBufferLen() < size):
+        buffer_len = self.getBufferLen()
+
+        while(buffer_len < size):
+
             delta = time.time() - start
-            if delta > time_limit: return None
+
+            # gera erros quando os dados esperados não são recebidos
+            if delta > time_limit:
+                if buffer_len == 0: raise RX.RXTimeoutError('getData timeout')
+                if buffer_len > 0: raise RX.RXNotEnoughDataError('Not enough data received')
+
             else: time.sleep(0.05)
 
-        return self.getBuffer(size)
+            buffer_len = self.getBufferLen()
 
-        # while(self.getBufferLen()<size):
-        #     time.sleep(0.05)
-        # return(self.getBuffer(size))
+        return self.getBuffer(size)
 
     def clearBuffer(self):
         self.buffer = b""

@@ -43,5 +43,4 @@ class Enlace(object):
         
     def getData(self, size, time_limit=5):
         data = self.rx.getNData(size, time_limit)
-        if data is None: return (None, None)
-        return(data, len(data))
+        return data
