@@ -1,9 +1,19 @@
+"""
+Arquivo para aplicação do lado do cliente
+
+OBS: ID do cliente - 0; ID do servidor - 1
+"""
+
 from enlace import *
 import utils
 from datagrams import *
 import time
 import numpy as np
 import math
+import sys
+
+server_id = 1
+client_id = 0
 
 # serialName = "/dev/cu.usbmodem14201
 serialName = "COM4"                 
@@ -33,72 +43,71 @@ def main():
         ammount =  math.ceil(data_size / Packet.MAX_PAYLOAD_SIZE)
 
         inicia = False
+        
         while inicia == False:
             print("Enviando o Handshake")
-            handshake = Type1(1, ammount).sendable
+            handshake = Type1(server_id=server_id, ammount=ammount).sendable
             com1.sendData(handshake)
             time.sleep(5)
             rxBuffer, nRx = com1.getData(Type2.size)
             com1.rx.clearBuffer
+            packet = utils.decode(rxBuffer)
+            if packet.message_type ==2: inicia = True
+        
+        # loop de fragmentação
+        cont = 1
+        while cont<=ammount:
+            # intervalo para extrair dos dados brutos
+            from_index = (cont-1) * Packet.MAX_PAYLOAD_SIZE
+            to_index = cont * Packet.MAX_PAYLOAD_SIZE
+
+            # extrai o intervalo e cria um Packet com os dados
+            packet_data = data[from_index:to_index]
+            packet = Type3(ammount=ammount, number=cont, data=packet_data)
             
+            # envia o pacote
+            com1.sendData(packet.sendable)
+            time.sleep(0.1)
 
-        # faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
-        tamanho_imagem = len(txBuffer)
+            # define o tempo base para os timers 1 e 2
+            timer1_start = time.time()
+            timer2_start = time.time()
 
-        # verbose de início de transmissão
-        print("*"*50)
-        print("Início da transmissão")
-        print("Enviando " + local_imagem + " (%d bytes)" % tamanho_imagem)
+            await_response = True
+            
+            while await_response == True:
+                # tenta pegar a mensagem do 
+                rxBuffer, nRx = com1.getData(size=Type4.SIZE)
 
-        # início da transmissão
-        start = time.time()                     # momento do início da transmissão
-        com1.sendData(np.asarray(txBuffer))     # envio dos dados
-        end = time.time()                       # momento ao final da transmissão
-        delta = end - start                     # tempo de transmissão
+                if(utils.getMessageType(rxBuffer)==2):
+                    cont += 1
+                    timer1 = time.time() - timer1_start
+                    timer2 = time.time() - timer2_start
+                    if timer1>5:
+                        com1.sendData(packet.sendable)
+                        timer1_start = time.time()
+                    if timer2>20:
+                        timeout_msg = Type5()
+                        com1.sendData(timeout_msg.sendable)
+                        com1.disable
+                        sys.exit(':-(')
+                    rxBuffer, nRx = com1.getData(size=Type6.SIZE)
+                    if utils.getMessageType(rxBuffer):
+                        error_msg = utils.decode(rxBuffer)
+                        cont = error_msg.expected_number
+                        from_index = (cont-1) * Packet.MAX_PAYLOAD_SIZE
+                        to_index = cont * Packet.MAX_PAYLOAD_SIZE
 
-        # verbose do tempo de recepção
-        delta_ms_aprox = round(delta * 1000, 3)
-        print("Tempo de envio: ~" + str(delta_ms_aprox) + " ms")
-       
-        # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
-        # Tente entender como esse método funciona e o que ele retorna
-        txSize = com1.tx.getStatus()
-        #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
-        #Observe o que faz a rotina dentro do thread RX
-        #print um aviso de que a recepção vai começar.
-        
-        #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
-        #Veja o que faz a funcao do enlaceRX  getBufferLen
+                        # extrai o intervalo e cria um Packet com os dados
+                        packet_data = data[from_index:to_index]
+                        packet = Type3(ammount=ammount, number=cont, data=packet_data)
+                        # envia o pacote
+                        com1.sendData(packet.sendable)
+                        time.sleep(0.1)
+                        timer1_start = time.time()
+                        timer2_start = time.time()
+                        await_response = False
 
-        arquivo_imagem_recebida = "./imagemrecebida.png"
-
-        # verbose de recepção de dados
-        print("*"*50)
-        print("Recebendo dados...")
-      
-        # acesso aos bytes recebidos
-        txLen = len(txBuffer)         
-        start = time.time()                 # momento do início da leitura
-        rxBuffer, nRx = com1.getData(txLen) # faz a leitura do buffer (bytes e tamanho)
-        end = time.time()
-        delta = end - start
-
-        # verbose de recepção de dados
-        delta_aprox = round(delta, 2)
-        print("Tempo de recepção: ~" + str(delta_aprox) + "s (%d bytes)" % nRx)
-        print("Salvando imagem em " + arquivo_imagem_recebida)
-
-        print("*"*50)
-
-        f = open(arquivo_imagem_recebida, 'wb')
-        f.write(rxBuffer)
-
-        f.close()
-    
-        # Encerra comunicação
-        print("\nComunicação encerrada")
-        com1.disable()
-        
     except Exception as erro:
         print("ops! :-\\")
         print(erro)

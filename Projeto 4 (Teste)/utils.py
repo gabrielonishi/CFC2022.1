@@ -10,15 +10,16 @@ def splitBytes(data):
         result.append(bytes(data))
     return result
 
+def getMessageType(raw_packet):
+    bytes_list = splitBytes(raw_packet)
+    head = bytes_list[ : Packet.HEAD_SIZE]
+    message_type = head[0]
+    return(message_type)
+
 def decode(raw_packet):
         '''
         Retorna um objeto Packet a partir de uma lista de bytes de um datagrama recebido
         Retorna False se receber um pacote com especificações inesperadas
-    
-        Parâmetros:
-        - message_type: tipo de mensagem esperada
-        - raw_datagram: dados brutos que seguem o formato do datagrama
-
         '''
 
         # extrai o HEAD e o EOP
@@ -39,14 +40,15 @@ def decode(raw_packet):
         # h8 – h9 – CRC
 
         match message_type:
-            case 1:Type1(head[5], head[3])
-            case 2:Type2()
-            case 3:Type3(head[3], head[4], bytes_list[Packet.HEAD_SIZE + 1: -1 * Packet.EOP_SIZE -1])
-            case 4:Type4(head[7])
-            case 5:Type5()
-            case 6:Type6(head[6])
+            case 1: packet = Type1(head[5], head[3])
+            case 2: packet = Type2()
+            case 3: packet = Type3(head[3], head[4], bytes_list[Packet.HEAD_SIZE + 1: -1 * Packet.EOP_SIZE -1])
+            case 4: packet = Type4(head[7])
+            case 5: packet = Type5()
+            case 6: packet = Type6(head[6])
         
-        eop = bytes_list[-1 * Packet.EOP_SIZE : ]
+        return packet
+        
 
 
 def tryAgainPrompt():

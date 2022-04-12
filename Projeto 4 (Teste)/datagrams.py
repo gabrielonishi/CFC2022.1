@@ -24,6 +24,7 @@ class Packet:
     HEAD_SIZE = 10                          # tamanho do head
     MAX_PAYLOAD_SIZE = 114                  # tamanho máximo payload em bytes
     EOP_SIZE = 4                            # tamanho do EOP em bytes
+    FILLER = [b'\xAA']
 
     def __init__(self, head:list, payload:list):
         self.head = head
@@ -48,6 +49,8 @@ class Type1(Packet):
     - size: tamanho da mensagem
 
     """
+    
+    SIZE = Packet.HEAD_SIZE + Packet.EOP_SIZE
 
     def __init__(self, server_id:int, ammount:int):
 
@@ -61,15 +64,15 @@ class Type1(Packet):
         self.number = 0
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
-        h1 = [b'\xAA']
-        h2 = [b'\xAA']
+        h1 = Packet.FILLER
+        h2 = Packet.FILLER
         h3 = [self.ammount.to_bytes(1, byteorder="big")]
         h4 = [self.number.to_bytes(1, byteorder="big")]
         h5 = [self.server_id.to_bytes(1,byteorder="big")]
-        h6 = [b'\xAA']
-        h7 = [b'\xAA']
-        h8 = [b'\xAA']
-        h9 = [b'\xAA']
+        h6 = Packet.FILLER
+        h7 = Packet.FILLER
+        h8 = Packet.FILLER
+        h9 = Packet.FILLER
         
         head = h0 + h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 + h9
         payload = []
@@ -87,28 +90,30 @@ class Type2(Packet):
 
     Propriedades:
     - message_type: tipo de mensagem 
+    - id: id do receptor do pacote
 
     """
 
-    def __init__(self):
+    SIZE = Packet.HEAD_SIZE + Packet.EOP_SIZE
+
+    def __init__(self, client_id:int):
 
         self.message_type = 2
+        self.client_id = client_id
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
-        h1 = [b'\xAA']
-        h2 = [b'\xAA']
-        h3 = [b'\xAA']
-        h4 = [b'\xAA']
-        h5 = [b'\xAA']
-        h6 = [b'\xAA']
-        h7 = [b'\xAA']
-        h8 = [b'\xAA']
-        h9 = [b'\xAA']
+        h1 = Packet.FILLER
+        h2 = Packet.FILLER
+        h3 = Packet.FILLER
+        h4 = Packet.FILLER
+        h5 = [self.client_id.to_bytes(1, byteorder="big")]
+        h6 = Packet.FILLER
+        h7 = Packet.FILLER
+        h8 = Packet.FILLER
+        h9 = Packet.FILLER
         
         head = h0 + h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 + h9
         payload = []
-
-        self.size = Packet.HEAD_SIZE + Packet.EOP_SIZE
 
         super().__init__(head=head, payload=payload)
     
@@ -140,15 +145,15 @@ class Type3(Packet):
         self.payload_size = len(data)
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
-        h1 = [b'\xAA']
-        h2 = [b'\xAA']
+        h1 = Packet.FILLER
+        h2 = Packet.FILLER
         h3 = [self.ammount.to_bytes(1, byteorder="big")]
         h4 = [self.number.to_bytes(1, byteorder="big")]
         h5 = [self.payload_size.to_bytes(1, byteorder="big")]
-        h6 = [b'\xAA']
-        h7 = [b'\xAA']
-        h8 = [b'\xAA']
-        h9 = [b'\xAA']
+        h6 = Packet.FILLER
+        h7 = Packet.FILLER
+        h8 = Packet.FILLER
+        h9 = Packet.FILLER
         
         head = h0 + h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 + h9
         payload = data
@@ -169,6 +174,8 @@ class Type4(Packet):
     - last_received: número do último pacote a ser recebido
 
     """
+    
+    SIZE = Packet.HEAD_SIZE + Packet.EOP_SIZE
 
     def __init__(self, last_received: int):
 
@@ -176,20 +183,18 @@ class Type4(Packet):
         self.last_received = last_received
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
-        h1 = [b'\xAA']
-        h2 = [b'\xAA']
-        h3 = [b'\xAA']
-        h4 = [b'\xAA']
-        h5 = [b'\xAA']
-        h6 = [b'\xAA']
+        h1 = Packet.FILLER
+        h2 = Packet.FILLER
+        h3 = Packet.FILLER
+        h4 = Packet.FILLER
+        h5 = Packet.FILLER
+        h6 = Packet.FILLER
         h7 = [self.last_received.to_bytes(1, byteorder="big")]
-        h8 = [b'\xAA']
-        h9 = [b'\xAA']
+        h8 = Packet.FILLER
+        h9 = Packet.FILLER
         
         head = h0 + h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 + h9
         payload = []
-
-        self.size = Packet.HEAD_SIZE + Packet.EOP_SIZE
 
         super().__init__(head=head, payload=payload)
     
@@ -205,26 +210,25 @@ class Type5(Packet):
     - message_type: tipo de mensagem
 
     """
+    SIZE = Packet.HEAD_SIZE + Packet.EOP_SIZE
 
     def __init__(self):
 
         self.message_type = 5
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
-        h1 = [b'\xAA']
-        h2 = [b'\xAA']
-        h3 = [b'\xAA']
-        h4 = [b'\xAA']
-        h5 = [b'\xAA']
-        h6 = [b'\xAA']
-        h7 = [b'\xAA']
-        h8 = [b'\xAA']
-        h9 = [b'\xAA']
+        h1 = Packet.FILLER
+        h2 = Packet.FILLER
+        h3 = Packet.FILLER
+        h4 = Packet.FILLER
+        h5 = Packet.FILLER
+        h6 = Packet.FILLER
+        h7 = Packet.FILLER
+        h8 = Packet.FILLER
+        h9 = Packet.FILLER
         
         head = h0 + h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 + h9
         payload = []
-
-        self.size = Packet.HEAD_SIZE + Packet.EOP_SIZE
 
         super().__init__(head=head, payload=payload)
 
@@ -244,25 +248,25 @@ class Type6(Packet):
 
     """
 
+    SIZE = Packet.HEAD_SIZE + Packet.EOP_SIZE
+
     def __init__(self, expected_number:int):
 
         self.message_type = 6
         self.expected_number = expected_number
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
-        h1 = [b'\xAA']
-        h2 = [b'\xAA']
-        h3 = [b'\xAA']
-        h4 = [b'\xAA']
-        h5 = [b'\xAA']
+        h1 = Packet.FILLER
+        h2 = Packet.FILLER
+        h3 = Packet.FILLER
+        h4 = Packet.FILLER
+        h5 = Packet.FILLER
         h6 = [self.expected_number.to_bytes(1, byteorder="big")]
-        h7 = [b'\xAA']
-        h8 = [b'\xAA']
-        h9 = [b'\xAA']
+        h7 = Packet.FILLER
+        h8 = Packet.FILLER
+        h9 = Packet.FILLER
         
         head = h0 + h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 + h9
         payload = []
-
-        self.size = Packet.HEAD_SIZE + Packet.EOP_SIZE
 
         super().__init__(head=head, payload=payload)
