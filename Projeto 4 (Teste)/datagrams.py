@@ -31,7 +31,45 @@ class Packet:
         self.payload = payload
         self.eop = [b'\xAA', b'\xBB', b'\xCC', b'\xDD']
         self.bytes_list = self.head + self.payload + self.eop
-        self.sendable = np.asarray(self.bytes_list)    
+        self.sendable = np.asarray(self.bytes_list)
+
+    @staticmethod
+    def decode(raw_packet):
+        '''
+        Retorna um objeto Packet a partir de uma lista de bytes de um datagrama recebido
+        '''
+
+        # extrai o HEAD e o EOP
+        bytes_list = utils.splitBytes(raw_packet)
+        h = bytes_list[ : Packet.HEAD_SIZE]
+        message_type = h[0]
+
+        #Lembrando que:
+        # 0 – tipo de mensagem
+        # h1 – livre
+        # h2 – livre
+        # h3 – número total de pacotes do arquivo
+        # h4 – número do pacote sendo enviado
+        # h5 – se tipo for handshake: id do arquivo
+        # h5 – se tipo for dados: tamanho do payload
+        # h6 – pacote solicitado para recomeço quando a erro no envio.
+        # h7 – último pacote recebido com sucesso.
+        # h8 – h9 – CRC
+
+        match message_type:
+            case b'\x01': packet = Type1(int.from_bytes(h[5], byteorder="big"), int.from_bytes(h[3], byteorder="big"))
+            case b'\x02': packet = Type2()
+            case b'\x03':
+                payload_bytes = raw_packet[Packet.HEAD_SIZE + 1: -1* Packet.EOP_SIZE - 1]
+                payload_int = []
+                for byte in payload_bytes:
+                    payload_int.append(int.from_bytes(byte, byteorder="big"))
+                packet = Type3(int.from_bytes(h[3], byteorder="big"), int.from_bytes(h[4], byteorder="big"), payload_int)
+            case b'\x04': packet = Type4(h[7])
+            case b'\x05': packet = Type5()
+            case b'\x06': packet = Type6(h[6])
+        
+        return packet    
 
 
 class Type1(Packet):
@@ -60,7 +98,8 @@ class Type1(Packet):
         self.message_type = 1
         self.server_id = server_id
         self.ammount = ammount
-        self.id = server_id
+        self.server_id = server_id
+        # O número do pacote de handshake é sempre 0
         self.number = 0
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
@@ -90,7 +129,7 @@ class Type2(Packet):
 
     Propriedades:
     - message_type: tipo de mensagem 
-    - id: id do receptor do pacote
+    - client_id: id do receptor do pacote
 
     """
 
@@ -129,6 +168,7 @@ class Type3(Packet):
     - ammount: quantidade total de pacotes a serem enviados
     - number: número do pacote que envia (começa do 1)
     - data: lista de bytes de dados(irão no payload)
+    - payload_size: tamanho do payload
 
     """
 

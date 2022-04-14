@@ -13,6 +13,7 @@ import math
 
 server_id = 1
 client_id = 0
+result_img = []
 
 # serialName = "/dev/cu.usbmodem14201
 serialName = "COM4"                 
@@ -48,10 +49,20 @@ def main():
         while(cont<=ammount):
             timer1_start = time.time()
             timer2_start = time.time()
+            raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
+            head_elements = utils.readType3Head(raw_head=raw_head)
             
+            if head_elements["message_type"] == 3:
+                raw_payload_and_eop, nRx = com1.getData(head_elements["payload_size"]+Packet.EOP_SIZE)
+                payload_and_eop_list = utils.splitBytes(raw_payload_and_eop)
+                if (payload_and_eop_list[-4]== b'\xAA' and payload_and_eop_list[-3]== b'\xBB' and payload_and_eop_list[-2]== b'\xCC' and payload_and_eop_list[-1]== b'\xDD'):
 
-
+            else:
+                time.sleep(1)
+                
             
+                
+
     except Exception as erro:
         print("ops! :-\\")
         print(erro)
