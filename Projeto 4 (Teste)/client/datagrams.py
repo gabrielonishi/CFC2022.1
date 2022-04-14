@@ -69,7 +69,34 @@ class Packet:
             case b'\x05': packet = Type5()
             case b'\x06': packet = Type6(h[6])
         
-        return packet    
+        return packet
+    
+    @staticmethod
+    def getMessageType(raw_packet:list):
+        """
+        Recebe um pacote inteiro e devolve o tipo de mensagem do pacote
+        Criado para aumentar eficiência computacional
+        """
+        bytes_list = utils.splitBytes(raw_packet)
+        head = bytes_list[ : Packet.HEAD_SIZE]
+        message_type = int.from_bytes(head[0], byteorder="big")
+        return(message_type)
+    
+    @staticmethod
+    def readType3Head(raw_head:list):
+        """
+        Recebe o head de um pacote do tipo 3 e devolve um dicionário com os seguintes parâmetros:
+        - message_type: tipo da mensagem
+        - ammount: quantidade total de pacotes a serem enviados
+        - number: número do pacote que envia (começa do 1)
+        - payload_size: tamanho do payload
+        """
+        h = utils.splitBytes(raw_head)
+        return ({"message_type": int.from_bytes(h[0],byteorder="big"), 
+                "ammount":int.from_bytes(h[3],byteorder="big"), 
+                "number":int.from_bytes(h[4],byteorder="big"), 
+                "payload_size":int.from_bytes(h[5],byteorder="big")})
+
 
 
 class Type1(Packet):

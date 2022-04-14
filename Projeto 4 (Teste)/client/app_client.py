@@ -73,7 +73,6 @@ def main():
         print("Vamos começar :)\n")
         cont = 1
         
-
         while cont<=ammount:
             # intervalo para extrair dos dados brutos
             from_index = (cont-1) * Packet.MAX_PAYLOAD_SIZE
@@ -101,10 +100,14 @@ def main():
                 
                 rxBuffer, nRx = com1.getData(size=Type4.SIZE)
 
-                if(utils.getMessageType(rxBuffer)==2):
-                    print("Mensagem Recebida!")
-                    cont += 1
-                    await_response = False
+                # Vendo se recebeu mensagem de confirmação
+                if(Packet.getMessageType(rxBuffer)==2):
+                    confirmation = Packet.decode(rxBuffer)
+                    # Checando se o número do pacote era o experado
+                    if confirmation.last_received == cont:
+                        print("Mensagem Recebida!")
+                        cont += 1
+                        await_response = False
 
                 else:
                     # Definindo timer
@@ -127,7 +130,7 @@ def main():
                         sys.exit(':-(')
                     rxBuffer, nRx = com1.getData(size=Type6.SIZE)
                     # Vendo se recebeu mensagem do tipo 6
-                    if utils.getMessageType(rxBuffer)==6:
+                    if Packet.getMessageType(rxBuffer)==6:
                         print("Ops... Mandei um pacote errado")
                         # Lendo o pacote certo
                         error_packet = Packet.decode(rxBuffer)

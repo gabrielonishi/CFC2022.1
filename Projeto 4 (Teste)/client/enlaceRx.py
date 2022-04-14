@@ -71,8 +71,12 @@ class RX(object):
         return(b)
 
     def getNData(self, size):
+        timer_start = time.time()
         while(self.getBufferLen() < size):
-            time.sleep(0.05)                 
+            timer = time.time() - timer_start
+            if(timer)>1:
+                return b"\x00"
+            time.sleep(0.05)
         return(self.getBuffer(size))
 
 
