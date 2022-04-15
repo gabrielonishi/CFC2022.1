@@ -16,7 +16,7 @@ import sys
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 server_id = 1
 client_id = 0
-filename = "./Client.txt"
+filename = "./Projeto 4 (Teste)/Client.txt"
 
 # serialName = "/dev/cu.usbmodem14201
 serialName = "COM4"        

@@ -12,9 +12,16 @@ import numpy as np
 import math
 
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
+
+# identificadores
 server_id = 1
 client_id = 0
-filename =  "./Server.txt"
+# nome do arquivo de log
+filename =  "./Projeto 4 (Teste)/Server.txt"
+# nome do arquivo recebido
+received_file = "./Projeto 4 (Teste)/img_recebida.png"
+data_list = []
+
 # serialName = "/dev/cu.usbmodem14201
 serialName = "COM4"  
 # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- #               
@@ -103,6 +110,8 @@ def main():
                     time.sleep(0.1)
                     utils.writeLog(filename, confirm, "envio")
                     cont += 1
+                    # Adicionando isso à mensagem final
+                    data_list.append(raw_packet[Packet.HEAD_SIZE:Packet.EOP_SIZE])
                 else:
                     print("Recebi um pacote não esperado")
                     print("Enviando mensagem de relato de problema")
@@ -128,7 +137,11 @@ def main():
                     time.sleep(0.1)
                     utils.writeLog(filename, packet, "envio")
                     timer1_start = time.time()
-                
+        
+        print("Sucesso!")
+        with open("imagem_recebida.png", "wb") as file:
+            file.write(data_list)
+
     except Exception as erro:
         print("ops! :-\\")
         print(erro)
