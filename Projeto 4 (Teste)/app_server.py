@@ -14,7 +14,7 @@ import math
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 server_id = 1
 client_id = 0
-result_img = []
+filename =  "./Server.txt"
 # serialName = "/dev/cu.usbmodem14201
 serialName = "COM4"  
 # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- #               
@@ -32,7 +32,12 @@ def main():
         # Código cedido pelo Carareto
         print("-- --"*15)
         print("Esperando 1 byte de sacrifício")
-        rxBuffer, nRx = com1.getData(1)
+        sacrificio = False
+        while not sacrificio:
+            rxBuffer, nRx = com1.getData(1)
+            if rxBuffer != [b'\xAB']:
+                # getNData devolve b'\x00' quando não recebe nada
+                sacrificio = True
         com1.rx.clearBuffer()
         time.sleep(.1)
         print("OK")
@@ -40,26 +45,34 @@ def main():
 
         # --- --- --- --- --- --- LOOP DE HANDSHAKE --- --- --- --- --- --- #
         ocioso = True
-        print("Iniciando protocolo de hanshake")
+        print("Iniciando protocolo de handhake")
         while ocioso:
             print("Aguardando mensagem")
-            rxBuffer, nRx = com1.getData(Type1.SIZE)
+            raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
+            rop_size = Packet.getROPSize(raw_head)
+            if rop_size is not False:
+                raw_rop = com1.getData(rop_size)
+                raw_packet = raw_head + raw_rop
+            else:
+                raw_packet = raw_head
+
             # Recriando o datagrama a partir do que foi recebido
-            handshake = Packet.decode(rxBuffer)
-            if handshake.message_type==1:
+            handshake = Packet.decode(raw_packet)
+            if handshake and isinstance(handshake, Type1):
+                utils.writeLog(filename, handshake, "receb")
                 if handshake.server_id == server_id:
                     print("Eba! Handshake recebido com ID certo")
                     ocioso = False
                     # Salvando a quantidade total de pacotes
                     ammount = handshake.ammount
                 else: print("Recebi uma mensagem, mas não é pra mim")
-            else: print("Recebi uma mensagem, mas não é um handshake")
-            time.sleep(1)
         
         # Enviando mensagem do tipo 2 (resposta do handshake)
         handshake_response = Type2(client_id=client_id)
         print("Enviando mensagem do tipo 2")
         com1.sendData(handshake_response)
+        time.sleep(0.1)
+        utils.writeLog(filename, handshake_response, "envio")
 
         # --- --- --- --- --- --- LOOP DE RECEBIMENTO --- --- --- --- --- --- #
         print("-- --"*15)
@@ -73,31 +86,31 @@ def main():
             # Definindo o início do timer de timeout (tipo 2)
             timer2_start = time.time()
             raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
-            head_elements = Packet.readType3Head(raw_head=raw_head)
-            
-            # Checando se a mensagem é do tipo 3 mesmo
-            if head_elements["message_type"] == 3:
-                # Pegando o payload e EOP a partir do tamanho do payload dado pelo head
-                raw_PLEOP, nRx = com1.getData(head_elements["payload_size"]+Packet.EOP_SIZE)
-                PLEOP_list = utils.splitBytes(raw_PLEOP)
-                # Checando se o número está correto e se tem EOP
-                if cont == head_elements["number"] and (PLEOP_list[-4]== b'\xAA' and PLEOP_list[-3]== b'\xBB' and PLEOP_list[-2]== b'\xCC' and PLEOP_list[-1]== b'\xDD'):
+            rop_size = Packet.getROPSize(raw_head)
+            if rop_size is not False:
+                raw_rop = com1.getData(rop_size)
+                raw_packet = raw_head + raw_rop
+            else:
+                raw_packet = raw_head
+            packet = Packet.decode(raw_packet)
+            if packet and packet.message_type==3:
+                utils.writeLog(filename, packet, "receb")
+                if packet.number==cont:
                     print(f'Mensagem {cont} OK')
-                    # Enviando mensagem do tipo 4
                     print("Enviando mensagem de confirmação")
                     confirm = Type4(last_received=cont)
                     com1.sendData(confirm.sendable)
+                    time.sleep(0.1)
+                    utils.writeLog(filename, confirm, "envio")
                     cont += 1
                 else:
-                    # Mandando mensagem de erro
                     print("Recebi um pacote não esperado")
                     print("Enviando mensagem de relato de problema")
                     error_msg = Type6(expected_number=cont)
-            # Se não recebeu uma mensagem do tipo 3
-            else:
-                # eu acho que tem que colocar essa parte na interface física
-                # caso contrário vai ficar no getdata pra sempre
-                time.sleep(1)
+                    com1.sendData(error_msg.sendable)
+                    time.sleep(0.1)
+                    utils.writeLog(filename, error_msg, "envio")
+            else:           
                 timer1 = time.time()-timer1_start
                 timer2 = time.time()-timer2_start
                 if timer2>20:
@@ -105,12 +118,15 @@ def main():
                     # Criando mensagem de timeout
                     timeout = Type5()
                     com1.sendData(timeout.sendable)
-                    com1.disable
+                    time.sleep(0.1)
+                    utils.writeLog(filename, timeout, "envio")
+                    com1.disable()
                     print(":-(")
                 elif timer1 > 2:
-                    # Enviando mensagem do tipo 4
-                    # --- --- --- NAO ENTENDI --- --- ---
-                    response = Type4(last_received=cont)
+                    packet = Type4(last_received=cont)
+                    com1.sendData(packet.sendable)
+                    time.sleep(0.1)
+                    utils.writeLog(filename, packet, "envio")
                     timer1_start = time.time()
                 
     except Exception as erro:

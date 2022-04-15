@@ -10,21 +10,21 @@ from datagrams import *
 import time
 import numpy as np
 import math
+from datetime import datetime
 import sys
 
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 server_id = 1
 client_id = 0
+filename = "./Client.txt"
 
 # serialName = "/dev/cu.usbmodem14201
 serialName = "COM4"        
 # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- #
 
-
 def main():
 
     try:
-        
         # --- --- --- --- INICIALIZAÇÃO E BYTE DE SACRIFÍCIO --- --- --- --- #
 
         # Declaramos um objeto do tipo enlace com o nome "com" e ativa comunicação
@@ -56,21 +56,43 @@ def main():
             handshake = Type1(server_id=server_id, ammount=ammount)
             print("Enviando Mensagem do Tipo 1")
             com1.sendData(handshake.sendable)
+            time.sleep(0.1)
+
+            # Escrevendo arquivo
+            utils.writeLog(filename=filename, packet=handshake, direction="envio")
+
             print("Esperando o servidor retornar")
             time.sleep(5)
-            rxBuffer, nRx = com1.getData(Type2.SIZE)
-            # Fazendo o decode do pacote do tipo 2 recebido
-            packet = Packet.decode(rxBuffer)
-            # Verifica se a mensagem recebida é do tipo 2 e se o id está certo
-            if packet.message_type == 2 and packet.client_id == client_id: 
-                inicia = True
-                print("Eba! Mensagem do tipo 2 recebida")
+
+            raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
+            rop_size = Packet.getROPSize(raw_head)
+            if rop_size is not False:
+                raw_rop = com1.getData(rop_size)
+                raw_packet = raw_head + raw_rop
+            else:
+                raw_packet = raw_head
+
+            # Usando decode pra criar um objeto packet
+            packet = Packet.decode(raw_packet)
+
+            # Vendo se de fato recebeu um objeto do tipo packet
+            if packet is not False:
+                # Escrevendo log
+                utils.writeLog(filename=filename, packet=packet, direction="receb")
+                # Verifica se a mensagem recebida é do tipo 2 e se o id está certo
+                if isinstance(packet, Type2):
+                    if packet.client_id == client_id:
+                        inicia = True
+                        print("Eba! Responderam o handshake!")
+                    else: print("Recebi uma mensagem do tipo 2, mas não é pra mim\nEnviando de novo")
+                else: print("Recebi uma mensagem de tipo inesperado\nEnviando de novo")
             else: 
                 print("Ops... Servidor não respondeu\nEnviando de novo")
         
         # --- --- --- --- --- --- LOOP DE ENVIO --- --- --- --- --- --- #
         print("-- --"*15)
         print("Vamos começar :)\n")
+
         cont = 1
         
         while cont<=ammount:
@@ -82,10 +104,10 @@ def main():
             packet_data = data[from_index:to_index]
             data_packet = Type3(ammount=ammount, number=cont, data=packet_data)
             
-            # envia o pacote com número {cont}
             print(f'Enviando pacote {cont}')
             com1.sendData(data_packet.sendable)
             time.sleep(0.1)
+            utils.writeLog(filename=filename, packet=data_packet, direction="envio")
 
             # Definindo o início do timer de reenvio (tipo 1)
             timer1_start = time.time()
@@ -98,17 +120,24 @@ def main():
 
             while await_response == True:
                 
-                rxBuffer, nRx = com1.getData(size=Type4.SIZE)
-
-                # Vendo se recebeu mensagem de confirmação
-                if(Packet.getMessageType(rxBuffer)==2):
-                    confirmation = Packet.decode(rxBuffer)
-                    # Checando se o número do pacote era o experado
-                    if confirmation.last_received == cont:
-                        print("Mensagem Recebida!")
-                        cont += 1
-                        await_response = False
-
+                # Lendo o head
+                raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
+                rop_size = Packet.getROPSize(raw_head)
+                if rop_size is not False:
+                    raw_rop = com1.getData(rop_size)
+                    raw_packet = raw_head + raw_rop
+                else:
+                    raw_packet = raw_head
+                
+                received_packet = Packet.decode(raw_packet)
+                
+                # Vendo se recebeu mensagem de confirmação e se o número do pacote era o experado
+                if received_packet and isinstance(received_packet, Type4) and received_packet.last_received == cont:
+                    # Escrevendo no log
+                    utils.writeLog(filename=filename, packet=received_packet, direction="receb")
+                    print("Mensagem Recebida!")
+                    cont += 1
+                    await_response = False
                 else:
                     # Definindo timer
                     timer1 = time.time() - timer1_start
@@ -120,21 +149,25 @@ def main():
                         print("Tentando enviar de novo")
                         com1.sendData(data_packet.sendable)
                         time.sleep(0.1)
+                        utils.writeLog(filename, data_packet, "envio")
                         timer1_start = time.time()
+                    
                     # Testando Timeout
                     if timer2>20:
                         timeout_msg = Type5()
                         com1.sendData(timeout_msg.sendable)
+                        time.sleep(0.1)
+                        utils.writeLog(filename, timeout_msg, "envio")
                         com1.disable
                         print("\nTimeot!\nEncerrando COM")
                         sys.exit(':-(')
-                    rxBuffer, nRx = com1.getData(size=Type6.SIZE)
+                   
                     # Vendo se recebeu mensagem do tipo 6
-                    if Packet.getMessageType(rxBuffer)==6:
+                    if received_packet and isinstance(received_packet, Type6):
+                        utils.writeLog(filename, received_packet, "receb")
                         print("Ops... Mandei um pacote errado")
                         # Lendo o pacote certo
-                        error_packet = Packet.decode(rxBuffer)
-                        cont = error_packet.expected_number
+                        cont = received_packet.expected_number
                         # Refazendo o pacote t3
                         from_index = (cont-1) * Packet.MAX_PAYLOAD_SIZE
                         to_index = cont * Packet.MAX_PAYLOAD_SIZE
@@ -145,6 +178,7 @@ def main():
                         print(f"Enviando pacote {cont}")
                         com1.sendData(packet.sendable)
                         time.sleep(0.1)
+                        utils.writeLog(filename, packet, "envio")
                         timer1_start = time.time()
                         timer2_start = time.time()
                         await_response = False

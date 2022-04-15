@@ -71,11 +71,14 @@ class RX(object):
         return(b)
 
     def getNData(self, size):
+        """
+        Por convenção, mandaremos b"\xAB" quando não conseguir pegar buffer
+        """
         timer_start = time.time()
         while(self.getBufferLen() < size):
             timer = time.time() - timer_start
             if(timer)>1:
-                return b"\x00"
+                return [b"\xAB"]
             time.sleep(0.05)
         return(self.getBuffer(size))
 

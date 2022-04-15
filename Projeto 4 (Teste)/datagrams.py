@@ -24,7 +24,7 @@ class Packet:
     HEAD_SIZE = 10                          # tamanho do head
     MAX_PAYLOAD_SIZE = 114                  # tamanho máximo payload em bytes
     EOP_SIZE = 4                            # tamanho do EOP em bytes
-    FILLER = [b'\xAA']
+    FILLER = [b'\xAA']                      # byte de filler
 
     def __init__(self, head:list, payload:list):
         self.head = head
@@ -32,6 +32,8 @@ class Packet:
         self.eop = [b'\xAA', b'\xBB', b'\xCC', b'\xDD']
         self.bytes_list = self.head + self.payload + self.eop
         self.sendable = np.asarray(self.bytes_list)
+        self.size = Packet.HEAD_SIZE + len(payload) + Packet.EOP_SIZE 
+        self.message_type = head[0]
 
     @staticmethod
     def decode(raw_packet):
@@ -56,48 +58,48 @@ class Packet:
         # h7 – último pacote recebido com sucesso.
         # h8 – h9 – CRC
 
-        match message_type:
-            case b'\x01': packet = Type1(int.from_bytes(h[5], byteorder="big"), int.from_bytes(h[3], byteorder="big"))
-            case b'\x02': packet = Type2()
-            case b'\x03':
-                payload_bytes = raw_packet[Packet.HEAD_SIZE + 1: -1* Packet.EOP_SIZE - 1]
-                payload_int = []
-                for byte in payload_bytes:
-                    payload_int.append(int.from_bytes(byte, byteorder="big"))
-                packet = Type3(int.from_bytes(h[3], byteorder="big"), int.from_bytes(h[4], byteorder="big"), payload_int)
-            case b'\x04': packet = Type4(h[7])
-            case b'\x05': packet = Type5()
-            case b'\x06': packet = Type6(h[6])
-        
+        eop = [b'\xAA', b'\xBB', b'\xCC', b'\xDD']
+        # É preciso checar se o eop está no lugar certo. Retorna falso caso contrário
+        if eop[-1]==bytes_list[-1] and eop[-2]==bytes_list[-2] and eop[-3]==bytes_list[-3] and eop[-4]==bytes_list[-4]:
+            match message_type:
+                case b'\x01': packet = Type1(int.from_bytes(h[5], byteorder="big"), int.from_bytes(h[3], byteorder="big"))
+                case b'\x02': packet = Type2()
+                case b'\x03':
+                    payload_bytes = raw_packet[Packet.HEAD_SIZE + 1: -1* Packet.EOP_SIZE - 1]
+                    payload_int = []
+                    for byte in payload_bytes:
+                        payload_int.append(int.from_bytes(byte, byteorder="big"))
+                    packet = Type3(int.from_bytes(h[3], byteorder="big"), int.from_bytes(h[4], byteorder="big"), payload_int)
+                case b'\x04': packet = Type4(h[7])
+                case b'\x05': packet = Type5()
+                case b'\x06': packet = Type6(h[6])
+                case _: packet = False
+        else: return False
         return packet
     
     @staticmethod
-    def getMessageType(raw_packet:list):
+    def getROPSize(raw_head:list):
         """
-        Recebe um pacote inteiro e devolve o tipo de mensagem do pacote
-        Criado para aumentar eficiência computacional
+        Retorna o tamanho do resto do pacote (Rest Of Packet) através do head
+        Se não identificar o tipo da mensagem, retorna False
         """
-        bytes_list = utils.splitBytes(raw_packet)
-        head = bytes_list[ : Packet.HEAD_SIZE]
-        message_type = int.from_bytes(head[0], byteorder="big")
-        return(message_type)
-    
-    @staticmethod
-    def readType3Head(raw_head:list):
-        """
-        Recebe o head de um pacote do tipo 3 e devolve um dicionário com os seguintes parâmetros:
-        - message_type: tipo da mensagem
-        - ammount: quantidade total de pacotes a serem enviados
-        - number: número do pacote que envia (começa do 1)
-        - payload_size: tamanho do payload
-        """
-        h = utils.splitBytes(raw_head)
-        return ({"message_type": int.from_bytes(h[0],byteorder="big"), 
-                "ammount":int.from_bytes(h[3],byteorder="big"), 
-                "number":int.from_bytes(h[4],byteorder="big"), 
-                "payload_size":int.from_bytes(h[5],byteorder="big")})
+        # Separando a lista de bytes
+        bytes_head_list = utils.splitBytes(raw_head)
+        
+        # Verificando o tipo de mensagem. Apenas tipo 3 tem payload
+        non_data_packets = [b'x\01', b'x\02' , b'x\04', b'x\05', b'x\06']
+        if bytes_head_list[0] in non_data_packets:
+            payload_size = 0
+        if bytes_head_list[0] == 3:
+            payload_size = bytes_head_list[5]
 
+        # Caso não seja identificado nenhum tipo no head, há erro de pacote
+        # Enviando false para comunicar problema
+        else: return False
 
+        rop_size = payload_size + Packet.EOP_SIZE
+
+        return rop_size
 
 class Type1(Packet):
     """
@@ -121,14 +123,13 @@ class Type1(Packet):
 
         # Verificando erros:
         if ammount>256: raise ValueError("Mensagem grande demais!")
-        
+
         self.message_type = 1
         self.server_id = server_id
         self.ammount = ammount
         self.server_id = server_id
         # O número do pacote de handshake é sempre 0
         self.number = 0
-        
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
         h1 = Packet.FILLER
         h2 = Packet.FILLER
@@ -142,8 +143,6 @@ class Type1(Packet):
         
         head = h0 + h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 + h9
         payload = []
-
-        self.size = Packet.HEAD_SIZE + Packet.EOP_SIZE
 
         super().__init__(head=head, payload=payload)
 
@@ -166,7 +165,7 @@ class Type2(Packet):
 
         self.message_type = 2
         self.client_id = client_id
-        
+
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
         h1 = Packet.FILLER
         h2 = Packet.FILLER
@@ -224,8 +223,6 @@ class Type3(Packet):
         
         head = h0 + h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 + h9
         payload = data
-
-        self.size = Packet.HEAD_SIZE + len(payload) + Packet.EOP_SIZE
 
         super().__init__(head=head, payload=payload)
 
