@@ -78,7 +78,7 @@ class RX(object):
         while(self.getBufferLen() < size):
             timer = time.time() - timer_start
             if(timer)>1:
-                return [b"\xAB"]
+                return b'\xAB'
             time.sleep(0.05)
         return(self.getBuffer(size))
 

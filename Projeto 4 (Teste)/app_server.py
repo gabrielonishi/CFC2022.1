@@ -10,6 +10,7 @@ from datagrams import *
 import time
 import numpy as np
 import math
+import os
 
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 
@@ -17,13 +18,18 @@ import math
 server_id = 1
 client_id = 0
 # nome do arquivo de log
-filename =  "./Projeto 4 (Teste)/Server.txt"
+filename =  "./Server.txt"
 # nome do arquivo recebido
-received_file = "./Projeto 4 (Teste)/img_recebida.png"
+received_file = "./img_recebida.png"
+# garantindo que não existam esses arquivos
+if os.path.exists(filename):
+    os.remove(filename)
+if os.path.exists(received_file):
+    os.remove(received_file)
 data_list = []
 
 # serialName = "/dev/cu.usbmodem14201
-serialName = "COM4"  
+serialName = "COM3"  
 # --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- #               
 
 def main():
@@ -42,8 +48,7 @@ def main():
         sacrificio = False
         while not sacrificio:
             rxBuffer, nRx = com1.getData(1)
-            if rxBuffer != [b'\xAB']:
-                # getNData devolve b'\x00' quando não recebe nada
+            if rxBuffer != b'\xAB':
                 sacrificio = True
         com1.rx.clearBuffer()
         time.sleep(.1)
@@ -53,12 +58,12 @@ def main():
         # --- --- --- --- --- --- LOOP DE HANDSHAKE --- --- --- --- --- --- #
         ocioso = True
         print("Iniciando protocolo de handhake")
+        print("Aguardando mensagem")
         while ocioso:
-            print("Aguardando mensagem")
             raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
             rop_size = Packet.getROPSize(raw_head)
             if rop_size is not False:
-                raw_rop = com1.getData(rop_size)
+                raw_rop, nRx = com1.getData(rop_size)
                 raw_packet = raw_head + raw_rop
             else:
                 raw_packet = raw_head
@@ -73,11 +78,11 @@ def main():
                     # Salvando a quantidade total de pacotes
                     ammount = handshake.ammount
                 else: print("Recebi uma mensagem, mas não é pra mim")
-        
+
         # Enviando mensagem do tipo 2 (resposta do handshake)
         handshake_response = Type2(client_id=client_id)
         print("Enviando mensagem do tipo 2")
-        com1.sendData(handshake_response)
+        com1.sendData(handshake_response.sendable)
         time.sleep(0.1)
         utils.writeLog(filename, handshake_response, "envio")
 
@@ -95,12 +100,12 @@ def main():
             raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
             rop_size = Packet.getROPSize(raw_head)
             if rop_size is not False:
-                raw_rop = com1.getData(rop_size)
+                raw_rop, nRx = com1.getData(rop_size)
                 raw_packet = raw_head + raw_rop
             else:
                 raw_packet = raw_head
             packet = Packet.decode(raw_packet)
-            if packet and packet.message_type==3:
+            if packet and isinstance(packet, Type3):
                 utils.writeLog(filename, packet, "receb")
                 if packet.number==cont:
                     print(f'Mensagem {cont} OK')
@@ -111,7 +116,7 @@ def main():
                     utils.writeLog(filename, confirm, "envio")
                     cont += 1
                     # Adicionando isso à mensagem final
-                    data_list.append(raw_packet[Packet.HEAD_SIZE:Packet.EOP_SIZE])
+                    data_list.append(raw_packet[Packet.HEAD_SIZE:-Packet.EOP_SIZE])
                 else:
                     print("Recebi um pacote não esperado")
                     print("Enviando mensagem de relato de problema")
@@ -139,8 +144,8 @@ def main():
                     timer1_start = time.time()
         
         print("Sucesso!")
-        with open("imagem_recebida.png", "wb") as file:
-            file.write(data_list)
+        with open(received_file, "wb") as file:
+            file.write(np.asarray(data_list))
 
     except Exception as erro:
         print("ops! :-\\")

@@ -63,16 +63,16 @@ class Packet:
         if eop[-1]==bytes_list[-1] and eop[-2]==bytes_list[-2] and eop[-3]==bytes_list[-3] and eop[-4]==bytes_list[-4]:
             match message_type:
                 case b'\x01': packet = Type1(int.from_bytes(h[5], byteorder="big"), int.from_bytes(h[3], byteorder="big"))
-                case b'\x02': packet = Type2()
+                case b'\x02': packet = Type2(int.from_bytes(h[5], byteorder="big"))
                 case b'\x03':
-                    payload_bytes = raw_packet[Packet.HEAD_SIZE + 1: -1* Packet.EOP_SIZE - 1]
+                    payload_bytes = utils.splitBytes(raw_packet[Packet.HEAD_SIZE + 1: -1* Packet.EOP_SIZE - 1])
                     payload_int = []
                     for byte in payload_bytes:
                         payload_int.append(int.from_bytes(byte, byteorder="big"))
                     packet = Type3(int.from_bytes(h[3], byteorder="big"), int.from_bytes(h[4], byteorder="big"), payload_int)
-                case b'\x04': packet = Type4(h[7])
+                case b'\x04': packet = Type4(int.from_bytes(h[7], byteorder= "big"))
                 case b'\x05': packet = Type5()
-                case b'\x06': packet = Type6(h[6])
+                case b'\x06': packet = Type6(int.from_bytes(h[6], byteorder="big"))
                 case _: packet = False
         else: return False
         return packet
@@ -85,20 +85,17 @@ class Packet:
         """
         # Separando a lista de bytes
         bytes_head_list = utils.splitBytes(raw_head)
-        
         # Verificando o tipo de mensagem. Apenas tipo 3 tem payload
-        non_data_packets = [b'x\01', b'x\02' , b'x\04', b'x\05', b'x\06']
+        non_data_packets = [b'\x01', b'\x02' , b'\x04', b'\x05', b'\x06']
         if bytes_head_list[0] in non_data_packets:
             payload_size = 0
-        if bytes_head_list[0] == 3:
-            payload_size = bytes_head_list[5]
-
+        elif bytes_head_list[0] == b'\x03':
+            payload_size = int.from_bytes(bytes_head_list[5],byteorder="big")
+            
         # Caso não seja identificado nenhum tipo no head, há erro de pacote
         # Enviando false para comunicar problema
         else: return False
-
         rop_size = payload_size + Packet.EOP_SIZE
-
         return rop_size
 
 class Type1(Packet):

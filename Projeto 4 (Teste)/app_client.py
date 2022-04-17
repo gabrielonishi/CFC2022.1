@@ -12,11 +12,14 @@ import numpy as np
 import math
 from datetime import datetime
 import sys
+import os
 
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 server_id = 1
 client_id = 0
 filename = "./Projeto 4 (Teste)/Client.txt"
+if os.path.exists(filename):
+    os.remove(filename)
 
 # serialName = "/dev/cu.usbmodem14201
 serialName = "COM4"        
@@ -67,7 +70,7 @@ def main():
             raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
             rop_size = Packet.getROPSize(raw_head)
             if rop_size is not False:
-                raw_rop = com1.getData(rop_size)
+                raw_rop, nRx = com1.getData(rop_size)
                 raw_packet = raw_head + raw_rop
             else:
                 raw_packet = raw_head
@@ -124,7 +127,7 @@ def main():
                 raw_head, nRx = com1.getData(Packet.HEAD_SIZE)
                 rop_size = Packet.getROPSize(raw_head)
                 if rop_size is not False:
-                    raw_rop = com1.getData(rop_size)
+                    raw_rop, nRx = com1.getData(rop_size)
                     raw_packet = raw_head + raw_rop
                 else:
                     raw_packet = raw_head
@@ -184,7 +187,6 @@ def main():
                         await_response = False
             
         print("SUCESSO!!!")
-
     except Exception as erro:
         print("ops! :-\\")
         print(erro)

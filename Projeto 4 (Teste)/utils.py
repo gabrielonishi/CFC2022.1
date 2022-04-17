@@ -35,6 +35,6 @@ def writeLog(filename:str, packet:Packet, direction:str):
     if isinstance(packet, Type3):
         file.write(f'{datetime.today()} /{direction} /3 /{packet.size} /{packet.number} /{packet.ammount}\n')
     else:
-        file.write(f'{datetime.today()} /{direction} /{packet.message_type} /{packet.size}\n')
+        file.write(f'{datetime.today()} /{direction} /{int.from_bytes(packet.message_type, byteorder="big")} /{packet.size}\n')
     file.close()
     
