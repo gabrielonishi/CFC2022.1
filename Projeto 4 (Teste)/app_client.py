@@ -162,7 +162,7 @@ def main():
                         com1.sendData(timeout_msg.sendable)
                         time.sleep(0.1)
                         utils.writeLog(filename, timeout_msg, "envio")
-                        com1.disable
+                        com1.disable()
                         print("\nTimeot!\nEncerrando COM")
                         sys.exit(':-(')
                    
@@ -186,6 +186,12 @@ def main():
                         timer1_start = time.time()
                         timer2_start = time.time()
                         await_response = False
+                        
+                    elif isinstance(packet, Type5):
+                        print("Recebi uma mensagem de timeout")
+                        print("Encerrando a comunicação")
+                        com1.disable()
+                        sys.exit(':-(')
             
         print("SUCESSO!!!")
     except Exception as erro:

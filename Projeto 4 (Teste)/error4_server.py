@@ -1,5 +1,8 @@
 """
-Arquivo para aplicação do lado do cliente
+Arquivo para simulação de erro 4:  Transmissão com ausência de resposta de 
+pacote de dados recebido, por mais de 20 segundos.
+
+Deve ser rodado com app_client.py normalmente
 
 OBS: ID do cliente - 0; ID do servidor - 1
 """
@@ -111,6 +114,17 @@ def main():
                 if isinstance(packet, Type3) and packet.number==cont:
                     print(f'Mensagem {cont} OK')
                     print("Enviando mensagem de confirmação")
+
+
+                    # ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ #
+                    # AQUI ESTÁ A SIMULAÇÃO DO ERRO - sleep para não enviar de volta msg de confirmação
+                    print("Antes acho que vou dormir")
+                    time.sleep(21)
+
+                    # ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ #
+
+
+
                     confirm = Type4(last_received=cont)
                     com1.sendData(confirm.sendable)
                     time.sleep(0.1)

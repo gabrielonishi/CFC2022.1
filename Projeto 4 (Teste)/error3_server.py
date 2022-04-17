@@ -1,5 +1,9 @@
 """
-Arquivo para aplicação do lado do cliente
+Arquivo para simulação de erro 3: Transmissão com ausência de 
+resposta de handshake, por mais de 20 segundos
+
+Deve ser rodado com app_client.py normalmente
+
 
 OBS: ID do cliente - 0; ID do servidor - 1
 """
@@ -11,7 +15,6 @@ import time
 import numpy as np
 import math
 import os
-import sys
 
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 
@@ -82,10 +85,18 @@ def main():
 
         # Enviando mensagem do tipo 2 (resposta do handshake)
         handshake_response = Type2(client_id=client_id)
-        print("Enviando mensagem do tipo 2")
+
+        
+
+        # ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ #
+        # AQUI ESTÁ A SIMULAÇÃO DO ERRO - sleep para não enviar de volta handshake
+        print("Vou dar uma dormida")
+        time.sleep(21)
         com1.sendData(handshake_response.sendable)
         time.sleep(0.1)
         utils.writeLog(filename, handshake_response, "envio")
+        # ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ #
+
 
         # --- --- --- --- --- --- LOOP DE RECEBIMENTO --- --- --- --- --- --- #
         print("-- --"*15)
@@ -106,9 +117,9 @@ def main():
             else:
                 raw_packet = raw_head
             packet = Packet.decode(raw_packet)
-            if packet:
+            if packet and isinstance(packet, Type3):
                 utils.writeLog(filename, packet, "receb")
-                if isinstance(packet, Type3) and packet.number==cont:
+                if packet.number==cont:
                     print(f'Mensagem {cont} OK')
                     print("Enviando mensagem de confirmação")
                     confirm = Type4(last_received=cont)
@@ -118,18 +129,13 @@ def main():
                     cont += 1
                     # Adicionando isso à mensagem final
                     data_list.append(raw_packet[Packet.HEAD_SIZE:-Packet.EOP_SIZE])
-                elif isinstance(packet, Type3):
-                    print("Recebi um pacote de dados não esperado")
+                else:
+                    print("Recebi um pacote não esperado")
                     print("Enviando mensagem de relato de problema")
                     error_msg = Type6(expected_number=cont)
                     com1.sendData(error_msg.sendable)
                     time.sleep(0.1)
                     utils.writeLog(filename, error_msg, "envio")
-                elif isinstance(packet, Type5):
-                    print("Recebi uma mensagem de timeout")
-                    print("Encerrando a comunicação")
-                    com1.disable()
-                    sys.exit(':-(')
             else:           
                 timer1 = time.time()-timer1_start
                 timer2 = time.time()-timer2_start
