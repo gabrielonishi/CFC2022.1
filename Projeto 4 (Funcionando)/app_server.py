@@ -111,6 +111,7 @@ def main():
                 if isinstance(packet, Type3) and packet.number==cont:
                     print(f'Mensagem {cont} OK')
                     print("Enviando mensagem de confirmação")
+                    print(packet.data)
                     confirm = Type4(last_received=cont)
                     com1.sendData(confirm.sendable)
                     time.sleep(0.1)

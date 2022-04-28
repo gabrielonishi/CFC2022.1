@@ -65,11 +65,11 @@ class Packet:
                 case b'\x01': packet = Type1(int.from_bytes(h[5], byteorder="big"), int.from_bytes(h[3], byteorder="big"))
                 case b'\x02': packet = Type2(int.from_bytes(h[5], byteorder="big"))
                 case b'\x03':
-                    payload_bytes = utils.splitBytes(raw_packet[Packet.HEAD_SIZE + 1: -1* Packet.EOP_SIZE - 1])
-                    payload_int = []
-                    for byte in payload_bytes:
-                        payload_int.append(int.from_bytes(byte, byteorder="big"))
-                    packet = Type3(int.from_bytes(h[3], byteorder="big"), int.from_bytes(h[4], byteorder="big"), payload_int)
+                    payload_bytes = utils.splitBytes(raw_packet[Packet.HEAD_SIZE: -1* Packet.EOP_SIZE])
+                    # payload_int = []
+                    # for byte in payload_bytes:
+                    #     payload_int.append(int.from_bytes(byte, byteorder="big"))
+                    packet = Type3(int.from_bytes(h[3], byteorder="big"), int.from_bytes(h[4], byteorder="big"), payload_bytes)
                 case b'\x04': packet = Type4(int.from_bytes(h[7], byteorder= "big"))
                 case b'\x05': packet = Type5()
                 case b'\x06': packet = Type6(int.from_bytes(h[6], byteorder="big"))

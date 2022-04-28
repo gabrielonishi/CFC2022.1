@@ -107,7 +107,7 @@ def main():
             # extrai o intervalo e cria um Packet com os dados (definidos lá atrás)
             packet_data = data[from_index:to_index]
             data_packet = Type3(ammount=ammount, number=cont, data=packet_data)
-
+            print(data_packet.data)
             print(f'Enviando pacote {cont}')
             com1.sendData(data_packet.sendable)
             time.sleep(0.1)

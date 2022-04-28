@@ -65,7 +65,7 @@ class Packet:
                 case b'\x01': packet = Type1(int.from_bytes(h[5], byteorder="big"), int.from_bytes(h[3], byteorder="big"))
                 case b'\x02': packet = Type2(int.from_bytes(h[5], byteorder="big"))
                 case b'\x03':
-                    payload_bytes = utils.splitBytes(raw_packet[Packet.HEAD_SIZE + 1: -1* Packet.EOP_SIZE - 1])
+                    payload_bytes = utils.splitBytes(raw_packet[Packet.HEAD_SIZE: -1* Packet.EOP_SIZE])
                     payload_int = []
                     for byte in payload_bytes:
                         payload_int.append(byte)
@@ -191,6 +191,7 @@ class Type3(Packet):
     - ammount: quantidade total de pacotes a serem enviados
     - number: número do pacote que envia (começa do 1)
     - data: lista de bytes de dados(irão no payload)
+    - raw_data: payload contatenado, da maneira que o server recebe
     - payload_size: tamanho do payload
 
     """
@@ -205,6 +206,7 @@ class Type3(Packet):
         self.ammount = ammount
         self.number = number
         self.data = data
+        self.raw_data = b"".join(data)
         self.payload_size = len(data)
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]
