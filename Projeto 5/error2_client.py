@@ -1,5 +1,8 @@
 """
-Arquivo para aplicação do lado do cliente
+Arquivo para simulação de erro 2: Transmissão com erro na ordem dos pacotes enviados pelo client.
+Troca pacote 3 com 4 na hora de enviar
+
+Deve ser rodado com app_server.py normalmente
 
 OBS: ID do cliente - 0; ID do servidor - 1
 """
@@ -17,7 +20,7 @@ import os
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 server_id = 1
 client_id = 0
-filename = "./Projeto 4 (Funcionando)/Client.txt"
+filename = "./Projeto 4 (Teste)/Client.txt"
 if os.path.exists(filename):
     os.remove(filename)
 
@@ -44,7 +47,7 @@ def main():
         print("-- --"*15)
 
         # Dados a serem transmitidos (bytes da imagem "test_img.png")
-        local_imagem = "./Projeto 4 (Funcionando)/test_img.png"
+        local_imagem = "./Projeto 4 (Teste)/test_img.png"
         raw_data = open(local_imagem, 'rb').read()
         # Transformando dados em uma lista de bytes
         data = utils.splitBytes(raw_data)
@@ -108,6 +111,26 @@ def main():
             packet_data = data[from_index:to_index]
             data_packet = Type3(ammount=ammount, number=cont, data=packet_data)
 
+
+
+            # ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ #
+            # AQUI ESTÁ A SIMULAÇÃO DO ERRO - invertemos pacotes 3 e 4 de ordem
+            if(cont==3):
+                from_index = (3) * Packet.MAX_PAYLOAD_SIZE
+                to_index = 4 * Packet.MAX_PAYLOAD_SIZE
+
+                packet_data = data[from_index:to_index]
+                data_packet = Type3(ammount=ammount, number=4, data=packet_data)
+            if(cont==4):
+                from_index = (2) * Packet.MAX_PAYLOAD_SIZE
+                to_index = 3 * Packet.MAX_PAYLOAD_SIZE
+
+                packet_data = data[from_index:to_index]
+                data_packet = Type3(ammount=ammount, number=3, data=packet_data)
+            # ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ ~~~ #
+
+
+
             print(f'Enviando pacote {cont}')
             com1.sendData(data_packet.sendable)
             time.sleep(0.1)
@@ -162,7 +185,7 @@ def main():
                         com1.sendData(timeout_msg.sendable)
                         time.sleep(0.1)
                         utils.writeLog(filename, timeout_msg, "envio")
-                        com1.disable()
+                        com1.disable
                         print("\nTimeot!\nEncerrando COM")
                         sys.exit(':-(')
                    
@@ -186,12 +209,6 @@ def main():
                         timer1_start = time.time()
                         timer2_start = time.time()
                         await_response = False
-                        
-                    elif isinstance(packet, Type5):
-                        print("Recebi uma mensagem de timeout")
-                        print("Encerrando a comunicação")
-                        com1.disable()
-                        sys.exit(':-(')
             
         print("SUCESSO!!!")
     except Exception as erro:

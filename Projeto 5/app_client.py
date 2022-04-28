@@ -13,11 +13,12 @@ import math
 from datetime import datetime
 import sys
 import os
+import crcmod
 
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 server_id = 1
 client_id = 0
-filename = "./Projeto 4 (Funcionando)/Client.txt"
+filename = "./Projeto 5/Client.txt"
 if os.path.exists(filename):
     os.remove(filename)
 
