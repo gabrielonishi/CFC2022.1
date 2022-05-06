@@ -1,0 +1,1 @@
+''' Script do receptor do sinal dual-tone '''
