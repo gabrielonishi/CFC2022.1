@@ -1,5 +1,6 @@
 import numpy as np
 import utils
+from crccheck.crc import Crc16
 
 class Packet:
     """
@@ -10,6 +11,7 @@ class Packet:
     - payload: lista com o payload
     - eop: lista com o eop
     - bytes_list: lista com toda a mensagem pronta
+    - bytes_raw: lsita com toda a mensagem junta
     - sendable: lista pronta pra ser enviada
     """
 
@@ -31,9 +33,22 @@ class Packet:
         self.payload = payload
         self.eop = [b'\xAA', b'\xBB', b'\xCC', b'\xDD']
         self.bytes_list = self.head + self.payload + self.eop
+        self.bytes_raw = b"".join(self.bytes_list)
         self.sendable = np.asarray(self.bytes_list)
         self.size = Packet.HEAD_SIZE + len(payload) + Packet.EOP_SIZE 
         self.message_type = head[0]
+        self.crc = utils.splitBytes(Crc16.calc(self.bytes_raw).to_bytes(Packet.CRC_SIZE, byteorder="big"))
+        self.head = head[:-Packet.CRC_SIZE] + self.crc
+        self.bytes_list = self.head + self.payload + self.eop
+        self.bytes_raw = b"".join(self.bytes_list)
+        self.sendable = np.asarray(self.bytes_list)
+    
+    def setCRC(self, new_crc):
+        """
+            Função introduzida apenas para testar o que aconteceria se o CRC 
+            não for o esperado
+        """
+        self.crc = new_crc
 
     @staticmethod
     def decode(raw_packet):
@@ -75,6 +90,13 @@ class Packet:
                 case b'\x06': packet = Type6(int.from_bytes(h[6], byteorder="big"))
                 case _: packet = False
         else: return False
+
+        # Testando o crc
+        calc_crc = utils.splitBytes(Crc16.calc(packet.bytes_raw).to_bytes(Packet.CRC_SIZE, byteorder="big"))
+        if calc_crc != packet.crc:
+            print("CRC é diferente do esperado!")
+            return False
+
         return packet
     
     @staticmethod
@@ -191,7 +213,6 @@ class Type3(Packet):
     - ammount: quantidade total de pacotes a serem enviados
     - number: número do pacote que envia (começa do 1)
     - data: lista de bytes de dados(irão no payload)
-    - raw_data: payload contatenado, da maneira que o server recebe
     - payload_size: tamanho do payload
 
     """
@@ -206,7 +227,6 @@ class Type3(Packet):
         self.ammount = ammount
         self.number = number
         self.data = data
-        self.raw_data = b"".join(data)
         self.payload_size = len(data)
         
         h0 = [self.message_type.to_bytes(1, byteorder="big")]

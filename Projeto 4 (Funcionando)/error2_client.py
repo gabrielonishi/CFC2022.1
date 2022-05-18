@@ -20,7 +20,7 @@ import os
 # --- --- --- --- --- --- --- CONFIGURAÇÕES  --- --- --- --- --- --- --- #
 server_id = 1
 client_id = 0
-filename = "./Projeto 4 (Teste)/Client.txt"
+filename = "./Projeto 4 (Funcionando)/Client.txt"
 if os.path.exists(filename):
     os.remove(filename)
 
@@ -47,7 +47,7 @@ def main():
         print("-- --"*15)
 
         # Dados a serem transmitidos (bytes da imagem "test_img.png")
-        local_imagem = "./Projeto 4 (Teste)/test_img.png"
+        local_imagem = "./Projeto 4 (Funcionando)/test_img.png"
         raw_data = open(local_imagem, 'rb').read()
         # Transformando dados em uma lista de bytes
         data = utils.splitBytes(raw_data)
