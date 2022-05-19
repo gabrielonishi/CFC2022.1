@@ -95,7 +95,7 @@ def main():
     # voce deve tambem evitar que dois picos proximos sejam identificados, pois pequenas variacoes na
     # frequencia do sinal podem gerar mais de um pico, e na verdade tempos apenas 1.
    
-    index = peakutils.indexes(yf, thres=0.1, min_dist=50)
+    index = peakutils.indexes(yf, thres=0.5, min_dist=50)
     
     #printe os picos encontrados!
     
