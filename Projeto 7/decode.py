@@ -43,7 +43,6 @@ def main():
     #declare uma variavel "duracao" com a duracao em segundos da gravacao. poucos segundos ... 
     duration = 2 #tempo em segundos que ira aquisitar o sinal acustico captado pelo mic
 
-
     # faca um printo na tela dizendo que a captacao comecará em n segundos. e entao 
     #use um time.sleep para a espera
     input("Pressione Enter quando quiser começar a captação (começa em 5s)")
