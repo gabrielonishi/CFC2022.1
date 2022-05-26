@@ -29,6 +29,11 @@ def main():
 
     #10. Filtre as frequências superiores a 2.500 Hz.
     chatuba = utils.filtro(demodulate, sample_rate, 2500)
+    frequencies2, intensities2 = utils.calcFFT(chatuba, sample_rate)
+    plt.figure("Gráfico 7: Sinal de áudio filtrado demodulado - domínio da frequência")
+    plt.plot(frequencies2, intensities2)
+    plt.grid()
+    plt.show()
 
     #11. Execute o áudio do sinal demodulado e verifique que novamente é audível.
     print("Play")
